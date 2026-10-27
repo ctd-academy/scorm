@@ -78,8 +78,8 @@ rows=[
 ("Số câu mỗi lần thi",5,"Rút ngẫu nhiên từ ngân hàng câu hỏi. 0 = dùng tất cả"),
 ("Thời gian làm bài (phút)",10,"0 = không giới hạn"),
 ("Hiện đáp án sau khi nộp","Có","Có / Không"),
-("Nội dung liên hệ khi hết lượt","Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD Team để được hỗ trợ đăng ký lại. (Thay bằng tên, email, số điện thoại đầu mối L&OD)","Học viên thấy nội dung này khi hết lượt"),
-("File logo (tùy chọn)","","Tên file logo đặt trong thư mục khóa. Để trống = dùng chữ COTECCONS"),
+("Nội dung liên hệ khi hết lượt","Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại.","Học viên thấy nội dung này khi hết lượt"),
+("File logo (tùy chọn)","","Tên file logo đặt trong thư mục khóa. Để trống = dùng logo Coteccons trắng có sẵn"),
 ]
 for i,(a,b,c) in enumerate(rows,2):
     t.cell(row=i,column=1,value=a).font=bold

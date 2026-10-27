@@ -69,7 +69,7 @@ def read_excel(path, course_dir):
         "timeLimitMinutes": num("Thời gian làm bài (phút)", 0),
         "showAnswers": cell(info.get("Hiện đáp án sau khi nộp")).lower() in ("có", "co", "yes", "x"),
         "maxSpeed": 2,
-        "contact": cell(info.get("Nội dung liên hệ khi hết lượt")) or "Vui lòng liên hệ L&OD Team để được hỗ trợ.",
+        "contact": cell(info.get("Nội dung liên hệ khi hết lượt")) or "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại.",
     }
     logo = cell(info.get("File logo (tùy chọn)"))
 
