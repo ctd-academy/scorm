@@ -66,10 +66,26 @@ h3.warn { color: #9a6c3c; }
 
 .bar { height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; margin-top: 14px; }
 .bar span { display: block; height: 100%; background: var(--teal); transition: width .2s; }
-#export .status { margin-left: 12px; }
+#export .status, #preview .status { margin-left: 12px; }
 #exportState .verdict { margin-top: 14px; }
 table.workday th { width: 42%; font-size: 13px; color: var(--gray2); font-weight: 400; }
 table.workday td { font-weight: 600; color: var(--navy); }
 .copy { background: var(--white); border: 1px solid var(--navy); color: var(--navy); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .btn:disabled { opacity: .5; cursor: default; }
 body.exporting #step1 .btn { pointer-events: none; opacity: .5; }
+
+/* Bước 3: đặt pop-up */
+.placer { display: grid; grid-template-columns: 3fr 2fr; gap: 18px; align-items: start; }
+.placer select { width: 100%; font: inherit; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; }
+.placer video { width: 100%; background: #000; border-radius: 8px; display: block; max-height: 340px; }
+.placer-bar { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.placer-bar .btn { min-width: 0; }
+.clock { font-size: 28px; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; min-width: 90px; }
+table.placed td, table.placed th { padding: 4px 8px; }
+.del { border: 0; background: none; color: var(--bad); font-size: 14px; }
+.placer-list .btn { min-width: 0; margin: 0 6px 6px 0; }
+
+/* Bước 4: xem thử */
+.pv-tools { display: flex; gap: 8px; margin: 14px 0 8px; }
+.pv-tools .btn { min-width: 0; }
+.pv-frame { width: 100%; height: max(560px, 75vh); border: 1px solid var(--line); border-radius: 10px; background: #fff; }

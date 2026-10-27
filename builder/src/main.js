@@ -2,6 +2,8 @@ import "./style.css";
 import { readXlsx } from "./xlsx.js";
 import { readCourse, formatDuration } from "./course.js";
 import { writePackage, memorySink, diskSink } from "./package.js";
+import { renderPopupStep } from "./popups.js";
+import { renderPreviewStep, closePreview } from "./preview.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -11,6 +13,17 @@ const state = { excel: null, folder: null, folderName: "", logo: null, result: n
 const MEMORY_LIMIT = 500 * 1024 ** 2; // trình duyệt không ghi thẳng xuống ổ cứng được thì chỉ xuất khóa nhỏ
 const durationCache = new WeakMap(); // File -> giây (null nếu không mở được)
 let runId = 0;
+
+// Blob URL để phát video ngay từ máy người dùng (bước 3, 4); bỏ khi chọn thư mục khác
+const blobUrls = new Map();
+function urlOf(file) {
+  if (!blobUrls.has(file)) blobUrls.set(file, URL.createObjectURL(file));
+  return blobUrls.get(file);
+}
+function dropUrls() {
+  blobUrls.forEach((u) => URL.revokeObjectURL(u));
+  blobUrls.clear();
+}
 
 // Mọi file trong thư mục khóa, kể cả thư mục con; path tính từ thư mục khóa
 function folderEntries(files) {
@@ -55,7 +68,7 @@ async function check() {
   if (state.exporting) return;
   const my = ++runId;
   state.result = null;
-  lockExport();
+  lockLaterSteps();
   if (!state.excel || !state.folder) {
     setStep("step2", "locked");
     showCheck('<p class="note">Chọn file Excel và thư mục video để kiểm tra.</p>');
@@ -131,14 +144,28 @@ function render({ course, errors, warnings, files, totalSize }) {
   showCheck(html);
   setStep("step2", errors.length ? null : "done");
   state.result = errors.length ? null : { course, files, totalSize };
-  if (!errors.length) openExport();
+
+  // Bước 3 dùng được cả khi Excel còn lỗi (đang soạn câu hỏi); bước 4, 5 cần hết lỗi
+  const urls = new Map(files.map((f) => [f.zipPath, urlOf(f.file)]));
+  setStep("step3");
+  renderPopupStep($("popups"), course, course.videos.map((v) => urls.get(v.src) || null));
+  if (!errors.length) {
+    setStep("step4");
+    renderPreviewStep($("preview"), course, urls);
+    openExport();
+  }
 }
 
-// ---------------------------------------------------------------- Bước 5: xuất gói
-function lockExport() {
+function lockLaterSteps() {
+  setStep("step3", "locked");
+  $("popups").innerHTML = '<p class="note">Chọn file Excel và thư mục video để đặt pop-up.</p>';
+  setStep("step4", "locked");
+  closePreview($("preview"));
   setStep("step5", "locked");
   $("export").innerHTML = '<p class="note">Sửa hết lỗi ở bước 2 để xuất gói.</p>';
 }
+
+// ---------------------------------------------------------------- Bước 5: xuất gói
 
 function openExport() {
   const { course, totalSize } = state.result;
@@ -255,6 +282,8 @@ $("excel").addEventListener("change", (e) => {
 
 $("folder").addEventListener("change", (e) => {
   const files = [...e.target.files];
+  if (state.exporting) return;
+  dropUrls();
   state.folder = files.length ? files : null;
   state.folderName = files.length ? (files[0].webkitRelativePath || "").split("/")[0] : "";
   const n = files.filter((f) => /\.(mp4|m4v|mov|webm|avi|mkv|wmv)$/i.test(f.name)).length;

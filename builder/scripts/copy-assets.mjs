@@ -1,6 +1,6 @@
 // Chép Player, file Excel mẫu và logo vào builder/public/ trước khi chạy/đóng gói.
 // Nguồn duy nhất là player/, templates/, brand/ ở gốc repo: không sửa bản chép trong public/.
-import { rmSync, mkdirSync, cpSync, readdirSync, writeFileSync } from "node:fs";
+import { rmSync, mkdirSync, cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,4 +20,11 @@ const list = (dir, prefix = "") =>
     .sort((a, b) => (a.isDirectory() - b.isDirectory()) || a.name.localeCompare(b.name))
     .flatMap((d) => (d.isDirectory() ? list(join(dir, d.name), prefix + d.name + "/") : d.name === "course.js" ? [] : [prefix + d.name]));
 writeFileSync(join(PUB, "player-files.json"), JSON.stringify(list(join(PUB, "player"))));
+
+// Trang xem thử = player/index.html, nhưng lấy dữ liệu khóa từ trang Builder thay vì course.js.
+// Tạo sau khi lập danh sách ở trên nên không bị đưa vào gói SCORM.
+const index = readFileSync(join(ROOT, "player", "index.html"), "utf8");
+const tag = '<script src="course.js"></script>';
+if (!index.includes(tag)) throw new Error("player/index.html không còn nạp course.js: cần sửa scripts/copy-assets.mjs");
+writeFileSync(join(PUB, "player", "preview.html"), index.replace(tag, "<script>window.COURSE = parent.__previewCourse;</script>"));
 console.log("Đã chép player/, file Excel mẫu và logo vào builder/public/");
