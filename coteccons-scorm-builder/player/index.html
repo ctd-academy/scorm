@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coteccons e-Learning</title>
+<link rel="stylesheet" href="player.css">
+<script src="scorm12.js"></script>
+<script src="course.js"></script>
+</head>
+<body>
+<header class="hdr">
+  <span class="wordmark-wrap" id="brand"></span>
+  <span class="sep"></span>
+  <div class="ttl"><b id="courseTitle"></b><small id="learner"></small></div>
+  <span id="previewBadge"></span>
+  <div class="pct"><b id="pctNum">0%</b>hoàn thành</div>
+</header>
+<div class="bar"><div id="pctBar"></div></div>
+
+<div class="layout">
+  <nav class="toc" id="toc">
+    <button class="toc-toggle" id="tocToggle"><span id="tocLabel">Mục lục</span><span>▾</span></button>
+    <div class="toc-body"><h3>Nội dung khóa học</h3><ol id="tocList"></ol></div>
+  </nav>
+  <main class="main" id="main"></main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="player.js"></script>
+</body>
+</html>
