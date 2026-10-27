@@ -11,7 +11,7 @@ Repo này gồm 2 phần:
 | Phần | Trạng thái | Vai trò |
 |---|---|---|
 | `player/` | ✅ Xong, 26/26 test đạt | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
-| `builder/` | 🟡 Đang xây: **M1 xong** (chọn file + kiểm tra lỗi), tiếp theo M2 (xuất zip) | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
+| `builder/` | 🟡 Đang xây: **M1 + M2 xong** (kiểm tra lỗi, xuất zip SCORM), tiếp theo M3 (xem thử + đặt pop-up) | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
 
 Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&OD, không phải lập trình viên.
 
@@ -51,8 +51,10 @@ tests/                     LMS giả lập + 26 test Player + test giao diện B
 builder/                   Builder web (Vite + JS thuần)
   src/xlsx.js              đọc .xlsx bằng fflate (không dùng SheetJS)
   src/course.js            đọc khóa + kiểm tra lỗi, phải khớp read_excel() của build_scorm.py
+  src/zip.js               ghi zip streaming (CRC + kích thước ghi thẳng vào header, không dùng data descriptor)
+  src/package.js           đóng gói SCORM: course.js + imsmanifest.xml, phải khớp build() của build_scorm.py
   src/main.js              giao diện 5 bước
-  tests/course.test.mjs    test logic bằng Node (npm test), có so sánh với build_scorm.py
+  tests/*.test.mjs         test logic bằng Node (npm test), có so sánh dữ liệu và gói zip với build_scorm.py
   scripts/copy-assets.mjs  chép player/, template, logo vào builder/public/ (thư mục sinh ra, không sửa tay)
 .github/workflows/pages.yml  test + deploy Builder lên GitHub Pages khi main thay đổi
 ```
@@ -69,7 +71,8 @@ python3 tests/test_player.py
 (cd builder && npm install && npm test)        # test logic (cần python3 + openpyxl, ffprobe)
 (cd builder && npm run dev)                    # chạy thử trên máy
 (cd builder && npm run build) && npx http-server builder/dist -p 8766 -s -c-1 &
-python3 tests/test_builder.py                  # test giao diện Builder
+python3 tests/test_builder.py                  # test giao diện Builder + xuất gói (thêm LARGE=1: khóa 1,5 GB)
+# gói Builder xuất ra nằm ở out/test-builder/SCORM_ATLD-DEMO.zip: giải nén vào out/test/course rồi chạy test_player.py
 ```
 
 Cần: Python 3 + `openpyxl` + `playwright`, Node 18+, `ffmpeg`/`ffprobe`.
@@ -83,7 +86,9 @@ Cần: Python 3 + `openpyxl` + `playwright`, Node 18+, `ffmpeg`/`ffprobe`.
 - **Không dùng SheetJS:** bản mới chỉ có ở cdn.sheetjs.com (không cài được trong môi trường của Claude), bản trên npm (0.18.5) cũ và có lỗ hổng. Builder tự đọc .xlsx trong `builder/src/xlsx.js`.
 - Chrome không đọc lại được file Excel đã sửa sau khi chọn: người dùng phải bấm chọn lại file.
 - Gói zip: video và font lưu **STORED** (không nén lại), file text nén DEFLATE.
-- Khóa dài 120 phút ≈ 1–1,5 GB. Không được giữ cả zip trong RAM: phải **ghi streaming xuống ổ cứng**.
+- Khóa dài 120 phút ≈ 1–1,5 GB. Không được giữ cả zip trong RAM: phải **ghi streaming xuống ổ cứng** (`showSaveFilePicker`, chỉ Chrome/Edge). Trình duyệt khác tạo zip trong bộ nhớ, chỉ cho khóa < 500 MB.
+- **Không dùng zip streaming của fflate:** nó luôn ghi "data descriptor", kể cả với file STORED, mà `java.util.zip.ZipInputStream` (LMS chạy Java) không đọc được kiểu này. `src/zip.js` ghi header trước rồi quay lại điền CRC.
+- Test xuất khóa lớn trong Playwright phải dùng hồ sơ trình duyệt lưu trên đĩa (`launch_persistent_context`): hồ sơ mặc định nằm trong RAM, OPFS bị giới hạn dung lượng.
 
 ## Định nghĩa "xong" cho mỗi thay đổi
 

@@ -39,6 +39,7 @@ def make(demo, OUT):
   lines=[
   ("Cách dùng",""),
   ("1","Mỗi khóa học = 1 file Excel này. Đặt tên file theo mã khóa, ví dụ: ATLD-001.xlsx"),
+  ("Đóng gói","Điền xong, mở https://ctd-academy.github.io/scorm/ bằng Chrome hoặc Edge, chọn file Excel + thư mục video, bấm Xuất gói SCORM"),
   ("2","Ô nền vàng nhạt là ô cần điền. Không đổi tên sheet, không đổi tiêu đề cột."),
   ("3","Sheet 'Thông tin khóa': thông tin chung và luật bài kiểm tra của khóa."),
   ("4","Sheet 'Video': mỗi dòng là 1 bài (1 video), theo đúng thứ tự học. Tên file phải trùng tên file video trong thư mục khóa."),
@@ -72,7 +73,7 @@ def make(demo, OUT):
   ("•","Không dùng lại câu hỏi cuối khóa làm pop-up"),
   ]
   for i,(a,b) in enumerate(lines,3):
-      g.cell(row=i,column=1,value=a).font=bold if b=="" or a in("Loại","Video số","Mốc thời gian","Phương án","Đáp án đúng","Giải thích","Xáo phương án","Gợi ý") else body
+      g.cell(row=i,column=1,value=a).font=bold if b=="" or a in("Đóng gói","Loại","Video số","Mốc thời gian","Phương án","Đáp án đúng","Giải thích","Xáo phương án","Gợi ý") else body
       if b=="" and a: g.cell(row=i,column=1).font=Font(name=F,size=11,bold=True,color=NAVY)
       c=g.cell(row=i,column=2,value=b); c.font=body; c.alignment=wrap
   g.column_dimensions["A"].width=16; g.column_dimensions["B"].width=110

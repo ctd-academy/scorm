@@ -63,3 +63,13 @@ th { font-size: 12px; color: var(--gray2); font-weight: 600; }
 h3 { font-size: 14px; margin: 14px 0 6px; color: var(--navy); }
 h3.bad { color: var(--bad); }
 h3.warn { color: #9a6c3c; }
+
+.bar { height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; margin-top: 14px; }
+.bar span { display: block; height: 100%; background: var(--teal); transition: width .2s; }
+#export .status { margin-left: 12px; }
+#exportState .verdict { margin-top: 14px; }
+table.workday th { width: 42%; font-size: 13px; color: var(--gray2); font-weight: 400; }
+table.workday td { font-weight: 600; color: var(--navy); }
+.copy { background: var(--white); border: 1px solid var(--navy); color: var(--navy); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.btn:disabled { opacity: .5; cursor: default; }
+body.exporting #step1 .btn { pointer-events: none; opacity: .5; }
