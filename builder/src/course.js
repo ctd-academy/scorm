@@ -8,6 +8,7 @@ export const DEFAULT_CONTACT =
   "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại.";
 const VIDEO_EXT = /\.(mp4|m4v|mov|webm|avi|mkv|wmv|flv|mpe?g)$/i;
 export const SIZE_WARN = 3.5 * 1024 ** 3; // Workday giới hạn 4 GB mỗi gói
+const SIZE_LIMIT = 4 * 1024 ** 3 - 64 * 1024 ** 2; // chừa chỗ cho Player + header zip
 const POPUP_GAP = 60;
 
 export function cell(v) {
@@ -220,7 +221,9 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
   }
 
   const totalSize = files.reduce((s, f) => s + (f.file.size || 0), 0);
-  if (totalSize > SIZE_WARN)
+  if (totalSize > SIZE_LIMIT)
+    errors.push(`Tổng dung lượng ${(totalSize / 1024 ** 3).toFixed(2)} GB, vượt giới hạn 4 GB của Workday. Hãy nén video nhỏ hơn (720p)`);
+  else if (totalSize > SIZE_WARN)
     warnings.push(`Tổng dung lượng ${(totalSize / 1024 ** 3).toFixed(2)} GB, gần giới hạn 4 GB của Workday. Nên nén video nhỏ hơn (720p)`);
 
   const course = {

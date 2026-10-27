@@ -2,8 +2,21 @@
 
 Công cụ của L&OD Coteccons để đóng gói khóa e-learning (video + câu hỏi pop-up + bài thi cuối khóa) thành gói **SCORM 1.2** đưa lên **Workday Learning**.
 
+## Dành cho trainer
+
+1. Mở **https://ctd-academy.github.io/scorm/** bằng Chrome hoặc Edge.
+2. Bấm **"Tải file Excel mẫu"** trên trang, điền thông tin khóa học, video và câu hỏi.
+3. Chọn file Excel và thư mục video, Builder sẽ kiểm tra và báo lỗi cần sửa.
+4. Hết lỗi thì bấm **"Xuất gói SCORM"**, lưu file `SCORM_<Mã khóa>.zip` rồi đưa lên Workday. Builder hiện sẵn tên, mã, mô tả, thời lượng để copy sang Workday.
+
+Không cần cài đặt hay chạy lệnh gì. Video và đề thi không rời khỏi máy bạn.
+
+---
+
+## Dành cho người phát triển
+
 - `player/` – khung học dùng chung trong mọi gói (đã xong)
-- `builder/` – website để trainer tự đóng gói (đang xây theo `docs/BUILDER_SPEC.md`; xong M1: chọn file + kiểm tra lỗi)
+- `builder/` – website để trainer tự đóng gói (đang xây theo `docs/BUILDER_SPEC.md`; xong M1 + M2: kiểm tra lỗi, xuất gói SCORM)
 - `templates/Mau_nhap_lieu_khoa_hoc.xlsx` – **template chuẩn, trống**: mỗi khóa học chép ra 1 bản để nhập
 - `demo-course/` – khóa demo (Excel `ATLD-DEMO.xlsx` + 3 video) dùng để thử và test
 

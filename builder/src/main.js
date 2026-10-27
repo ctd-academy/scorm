@@ -1,12 +1,14 @@
 import "./style.css";
 import { readXlsx } from "./xlsx.js";
 import { readCourse, formatDuration } from "./course.js";
+import { writePackage, memorySink, diskSink } from "./package.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const mb = (n) => (n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2) + " GB" : Math.max(0.1, n / 1024 ** 2).toFixed(1) + " MB");
 
-const state = { excel: null, folder: null, folderName: "", logo: null, result: null };
+const state = { excel: null, folder: null, folderName: "", logo: null, result: null, exporting: false };
+const MEMORY_LIMIT = 500 * 1024 ** 2; // trình duyệt không ghi thẳng xuống ổ cứng được thì chỉ xuất khóa nhỏ
 const durationCache = new WeakMap(); // File -> giây (null nếu không mở được)
 let runId = 0;
 
@@ -54,8 +56,10 @@ function showCheck(html) {
 }
 
 async function check() {
+  if (state.exporting) return;
   const my = ++runId;
   state.result = null;
+  lockExport();
   if (!state.excel || !state.folder) {
     setStep("step2", "locked");
     showCheck('<p class="note">Chọn file Excel và thư mục video để kiểm tra.</p>');
@@ -130,8 +134,120 @@ function render({ course, errors, warnings, files, totalSize }) {
   }
   showCheck(html);
   setStep("step2", errors.length ? null : "done");
-  state.result = errors.length ? null : { course, files }; // dùng cho bước xuất (M2)
+  state.result = errors.length ? null : { course, files, totalSize };
+  if (!errors.length) openExport();
 }
+
+// ---------------------------------------------------------------- Bước 5: xuất gói
+function lockExport() {
+  setStep("step5", "locked");
+  $("export").innerHTML = '<p class="note">Sửa hết lỗi ở bước 2 để xuất gói.</p>';
+}
+
+function openExport() {
+  const { course, totalSize } = state.result;
+  setStep("step5");
+  const tooBig = !window.showSaveFilePicker && totalSize > MEMORY_LIMIT;
+  $("export").innerHTML = tooBig
+    ? `<div class="verdict bad">Khóa này ${mb(totalSize)}, trình duyệt bạn đang dùng chỉ xuất được khóa dưới 500 MB. Hãy mở trang này bằng Chrome hoặc Edge.</div>`
+    : `<button class="btn" id="exportBtn">Xuất gói SCORM</button>
+       <span class="status">Sẽ lưu thành file <b>SCORM_${esc(course.id)}.zip</b></span>
+       <div id="exportState"></div>`;
+  if (!tooBig) $("exportBtn").onclick = exportPackage;
+}
+
+async function playerFiles() {
+  const list = await (await fetch("./player-files.json")).json();
+  return Promise.all(list.map(async (path) => {
+    const r = await fetch("./player/" + path);
+    if (!r.ok) throw new Error("Không tải được file Player '" + path + "'. Hãy tải lại trang.");
+    return { path, data: new Uint8Array(await r.arrayBuffer()) };
+  }));
+}
+
+function progress(done, total) {
+  const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 100;
+  $("exportState").innerHTML = `<div class="bar"><span style="width:${pct}%"></span></div>
+    <p class="note">Đang ghi ${mb(done)} / ${mb(total)} (${pct}%). Đừng đóng trang này.</p>`;
+}
+
+async function exportPackage() {
+  const { course, files, totalSize } = state.result;
+  const name = `SCORM_${course.id}.zip`;
+  let writable = null, mem = null;
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: "Gói SCORM", accept: { "application/zip": [".zip"] } }] });
+      writable = await handle.createWritable();
+    } catch (e) {
+      if (e.name === "AbortError") return; // người dùng bấm Hủy
+      $("exportState").innerHTML = `<div class="verdict bad">Không tạo được file: ${esc(e.message)}</div>`;
+      return;
+    }
+  } else {
+    mem = memorySink();
+  }
+
+  state.exporting = true;
+  document.body.classList.add("exporting");
+  $("exportBtn").disabled = true;
+  progress(0, totalSize);
+  try {
+    const size = await writePackage({
+      course, files,
+      playerFiles: await playerFiles(),
+      sink: writable ? diskSink(writable) : mem,
+      onProgress: progress,
+    });
+    if (writable) await writable.close();
+    else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(mem.blob());
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    }
+    showDone(course, name, size);
+  } catch (e) {
+    if (writable) await writable.abort().catch(() => {});
+    $("exportState").innerHTML = `<div class="verdict bad">Xuất gói không thành công: ${esc(e.message || e)}. Hãy thử lại.</div>`;
+  } finally {
+    state.exporting = false;
+    document.body.classList.remove("exporting");
+    $("exportBtn").disabled = false;
+  }
+}
+
+function showDone(course, name, size) {
+  const total = course.videos.reduce((s, v) => s + v.duration, 0);
+  const rows = [
+    ["Tên khóa (Course Title)", course.title],
+    ["Mã khóa (Course Number)", course.id],
+    ["Mô tả ngắn (Description)", course.description],
+    ["Tổng thời lượng, phút (Total Course Duration)", String(Math.max(1, Math.ceil(total / 60)))],
+  ];
+  $("exportState").innerHTML = `<div class="verdict ok">Đã lưu ${esc(name)} (${mb(size)}). Đưa file này lên Workday dưới dạng Packaged Content (SCORM).</div>
+    <h3>Thông tin để tạo khóa trên Workday</h3>
+    <table class="workday"><tbody>${rows.map(([k, v], i) => `<tr><th>${esc(k)}</th><td>${esc(v) || "<i>(trống)</i>"}</td>
+      <td><button class="copy" data-i="${i}">Copy</button></td></tr>`).join("")}</tbody></table>`;
+  $("exportState").querySelectorAll(".copy").forEach((b) => {
+    b.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(rows[b.dataset.i][1]);
+        b.textContent = "Đã copy";
+      } catch {
+        b.textContent = "Không copy được";
+      }
+      setTimeout(() => (b.textContent = "Copy"), 1500);
+    };
+  });
+}
+
+window.addEventListener("beforeunload", (e) => {
+  if (state.exporting) e.preventDefault();
+});
 
 $("excel").addEventListener("change", (e) => {
   state.excel = e.target.files[0] || null;

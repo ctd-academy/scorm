@@ -27,7 +27,7 @@ Trình duyệt của trainer (Chrome/Edge)
 - Đề xuất công cụ: **Vite + JavaScript thuần** (không cần framework). Lý do: đơn giản, dễ bảo trì, build ra thư mục `dist/` tĩnh.
 - Thư viện (đóng gói vào bundle, không gọi CDN lúc chạy):
   - Đọc Excel: **tự đọc bằng fflate** (`builder/src/xlsx.js`). Đã bỏ SheetJS: bản mới chỉ có ở cdn.sheetjs.com (không cài được trong môi trường build của Claude), bản npm 0.18.5 cũ và có lỗ hổng. File .xlsx là zip chứa XML, chỉ cần đọc giá trị ô.
-  - Zip streaming: **client-zip** (chỉ STORED, streaming, nhẹ) hoặc **fflate** (có DEFLATE cho file text). Chọn một; ưu tiên cái giữ được: video STORED, text nén, không giữ toàn bộ zip trong RAM.
+  - Zip streaming: **tự ghi** trong `builder/src/zip.js` (video STORED, text DEFLATE bằng fflate). Không dùng client-zip hay zip streaming của fflate vì cả hai ghi "data descriptor" cho file STORED, `ZipInputStream` của Java không đọc được. Header ghi trước, đọc xong video thì quay lại điền CRC (ghi theo vị trí của FileSystemWritableFileStream).
 - Player: copy nguyên `player/` vào `builder/public/player/` lúc build (`builder/scripts/copy-assets.mjs`), để Builder vừa nhúng vào zip vừa dùng cho xem thử. **Một nguồn duy nhất là `player/`**, không sửa bản copy.
 
 ## 3. Luồng sử dụng (màn hình)
@@ -113,7 +113,7 @@ Quy tắc đọc Excel: xem `read_excel()` trong `tools/build_scorm.py`. Dòng v
 | Mốc | Nội dung | Nghiệm thu |
 |---|---|---|
 | M1 ✅ | Khung Vite, copy Player, đọc Excel + thư mục video, màn hình kiểm tra lỗi | Khóa demo hiện đúng tóm tắt; cố tình làm sai 5 loại lỗi thì báo đúng dòng |
-| M2 | Xuất zip streaming + thông tin Workday | Test tương đương với `build_scorm.py` đạt; 26/26 test Player đạt trên gói của Builder; xuất được khóa giả lập 1,5 GB không treo máy |
+| M2 ✅ | Xuất zip streaming + thông tin Workday | Test tương đương với `build_scorm.py` đạt; 26/26 test Player đạt trên gói của Builder; xuất được khóa giả lập 1,5 GB không treo máy |
 | M3 | Xem thử + đặt pop-up | Xem thử chạy đúng luật chơi; mốc đặt bằng nút khớp với giây trên video demo |
 | M4 | Deploy + hướng dẫn 1 trang | Link chạy trên Chrome/Edge (Windows và Mac); `docs/HUONG_DAN_TRAINER.md` ≤ 1 trang |
 
