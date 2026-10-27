@@ -1,0 +1,8 @@
+out/
+node_modules/
+dist/
+builder/dist/
+builder/public/player/
+__pycache__/
+.DS_Store
+*.log
