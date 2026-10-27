@@ -123,7 +123,7 @@ with sync_playwright() as p:
     check("Tự tìm thấy file Excel trong thư mục", page.inner_text("#excelStatus") == "File Excel: ATLD-DEMO.xlsx", page.inner_text("#excelStatus"))
     check("Khóa demo: không có lỗi", page.locator(".verdict.ok").count() == 1, page.inner_text(".verdict"))
     bar = page.inner_text("#topbar")
-    check("Thanh trên cùng: tên Excel, giờ đọc, không có lỗi", re.search(r"ATLD-DEMO\.xlsx · đọc lúc \d\d:\d\d:\d\d · không có lỗi", bar), bar)
+    check("Thanh ở bước 3: tên Excel, giờ đọc, không có lỗi", re.search(r"ATLD-DEMO\.xlsx · đọc lúc \d\d:\d\d:\d\d · không có lỗi", bar), bar)
     check("Trình duyệt chọn thư mục kiểu cũ: nút ghi Chọn lại thư mục", "Chọn lại thư mục" in page.inner_text("#recheck"))
     s = page.inner_text(".summary")
     check("Tóm tắt: mã khóa", "ATLD-DEMO" in s)
@@ -213,7 +213,7 @@ with sync_playwright() as p:
     page.set_input_files("#excel", bad)  # nút "Chọn file Excel khác"
     page.wait_for_selector(".verdict.bad", timeout=30000)
     check("Chọn file Excel khác: dùng file đó", page.inner_text("#excelStatus") == "File Excel: loi.xlsx", page.inner_text("#excelStatus"))
-    check("Thanh trên cùng: báo số lỗi", re.search(r"loi\.xlsx · đọc lúc \S+ · 7 lỗi", page.inner_text("#topbar")), page.inner_text("#topbar"))
+    check("Thanh ở bước 3: báo số lỗi", re.search(r"loi\.xlsx · đọc lúc \S+ · 7 lỗi", page.inner_text("#topbar")), page.inner_text("#topbar"))
     items = page.locator(".list.errors li").all_inner_texts()
     expect = [
         "Sheet Thông tin khóa, dòng 2: Mã khóa 'ATLD DEMO'",

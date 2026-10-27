@@ -75,9 +75,9 @@ table.workday td { font-weight: 600; color: var(--navy); }
 .btn:disabled { opacity: .5; cursor: default; }
 body.exporting #step1 .btn, body.exporting #step1 .linkbtn, body.exporting #recheck { pointer-events: none; opacity: .5; }
 
-/* Thanh trạng thái Excel: luôn thấy, để biết đang dùng bản Excel lưu lúc nào */
-.topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(22, 49, 94, .08); }
+/* Thanh trạng thái Excel ở bước 3: đang dùng bản Excel lưu lúc nào, nút Kiểm tra lại */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; margin-bottom: 12px; }
 .topbar .btn { min-width: 0; }
 .topbar .ok { color: var(--ok); font-weight: 600; }
 .topbar .bad { color: var(--bad); font-weight: 600; }

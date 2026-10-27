@@ -41,7 +41,7 @@ export function renderPopupStep(el, { key, videos, existing = [], fromFolder = f
   const folderNote = fromFolder
     ? `<div class="hint"><b>Excel chưa có danh sách video</b>, nên Builder xếp video theo thứ tự thư mục.
         Bấm <b>Copy danh sách video</b> rồi dán vào sheet <b>Video</b> ở ô <b>A3</b>, để "Video số" của các mốc pop-up khớp với Excel.
-        Đổi thứ tự bài trong Excel cũng được: bấm Kiểm tra lại, số video của các mốc sẽ tự đổi theo.
+        Đổi thứ tự bài trong Excel cũng được: bấm Kiểm tra lại ở bước 3, số video của các mốc sẽ tự đổi theo.
         <div style="margin-top:8px"><button class="btn btn-ghost" id="pvCopyVideos">Copy danh sách video</button></div></div>`
     : "";
 

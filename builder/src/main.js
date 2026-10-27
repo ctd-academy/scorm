@@ -106,7 +106,7 @@ function showCheck(html) {
   $("check").innerHTML = html;
 }
 
-// Thanh trên cùng: bản Excel nào, đọc lúc mấy giờ, còn bao nhiêu lỗi
+// Thanh ở bước 3: bản Excel nào, đọc lúc mấy giờ, còn bao nhiêu lỗi
 function showBar(html) {
   $("topbar").hidden = false;
   $("barText").innerHTML = html;

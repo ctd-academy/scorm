@@ -16,11 +16,6 @@
   <main>
     <p class="intro">Chọn thư mục khóa học (chứa video và file Excel). Mọi thứ chạy ngay trên máy bạn: <b>video và đề thi không được tải lên đâu cả</b>.</p>
 
-    <div class="topbar" id="topbar" hidden>
-      <span id="barText"></span>
-      <button class="btn" id="recheck">🔄 Kiểm tra lại</button>
-    </div>
-
     <section class="step" id="step1">
       <h2><span class="num">1</span>Chọn thư mục khóa</h2>
       <div class="pick">
@@ -34,7 +29,7 @@
         <button class="linkbtn" id="excelBtn">Chọn file Excel khác</button>
         <input type="file" id="excel" accept=".xlsx" hidden>
       </div>
-      <p class="note">Chọn thư mục chứa video của khóa (video nằm trong các thư mục con cũng được). Builder tự tìm file Excel trong thư mục. <b>File Excel chưa cần điền xong</b>: cứ sửa dần, lưu lại rồi bấm <b>Kiểm tra lại</b>.</p>
+      <p class="note">Chọn thư mục chứa video của khóa (video nằm trong các thư mục con cũng được). Builder tự tìm file Excel trong thư mục. <b>File Excel chưa cần điền xong</b>: cứ sửa dần, lưu lại rồi bấm <b>Kiểm tra lại</b> ở bước 3.</p>
       <p class="note">Trình duyệt có thể hỏi "Cho phép xem tệp?" hoặc "Tải lên?": cứ đồng ý, file vẫn chỉ nằm trên máy bạn.</p>
       <p class="note">Chưa có file Excel? <a href="./assets/Mau_nhap_lieu_khoa_hoc.xlsx" download>Tải file Excel mẫu</a>, lưu vào thư mục khóa.</p>
       <div class="pick" style="margin-top:12px">
@@ -50,6 +45,10 @@
 
     <section class="step locked" id="step3">
       <h2><span class="num">3</span>Kiểm tra</h2>
+      <div class="topbar" id="topbar" hidden>
+        <span id="barText"></span>
+        <button class="btn" id="recheck">🔄 Kiểm tra lại</button>
+      </div>
       <div id="check"><p class="note">Chọn thư mục khóa để kiểm tra.</p></div>
     </section>
 
