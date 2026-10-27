@@ -11,6 +11,7 @@
   --warn: #c59a6e; --warn-soft: #fbf3ea;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; font-family: "Lexend Deca", "Segoe UI", system-ui, sans-serif; color: var(--gray); background: var(--bg); line-height: 1.45; font-size: 15px; }
 button { font: inherit; cursor: pointer; }
 a { color: var(--navy); font-weight: 600; }
@@ -72,9 +73,20 @@ table.workday th { width: 42%; font-size: 13px; color: var(--gray2); font-weight
 table.workday td { font-weight: 600; color: var(--navy); }
 .copy { background: var(--white); border: 1px solid var(--navy); color: var(--navy); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .btn:disabled { opacity: .5; cursor: default; }
-body.exporting #step1 .btn { pointer-events: none; opacity: .5; }
+body.exporting #step1 .btn, body.exporting #step1 .linkbtn, body.exporting #recheck { pointer-events: none; opacity: .5; }
 
-/* Bước 3: đặt pop-up */
+/* Thanh trạng thái Excel: luôn thấy, để biết đang dùng bản Excel lưu lúc nào */
+.topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(22, 49, 94, .08); }
+.topbar .btn { min-width: 0; }
+.topbar .ok { color: var(--ok); font-weight: 600; }
+.topbar .bad { color: var(--bad); font-weight: 600; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--navy); font-weight: 600; text-decoration: underline; font-size: 14px; }
+#excelPick { font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; }
+.hint { background: var(--teal-soft); border-radius: 8px; padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
+.hint .btn { min-width: 0; }
+
+/* Bước 2: đặt pop-up */
 .placer { display: grid; grid-template-columns: 3fr 2fr; gap: 18px; align-items: start; }
 .placer select { width: 100%; font: inherit; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; }
 .placer video { width: 100%; background: #000; border-radius: 8px; display: block; max-height: 340px; }

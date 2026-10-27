@@ -5,10 +5,10 @@ Công cụ của L&OD Coteccons để đóng gói khóa e-learning (video + câu
 ## Dành cho trainer
 
 1. Mở **https://ctd-academy.github.io/scorm/** bằng Chrome hoặc Edge.
-2. Bấm **"Tải file Excel mẫu"** trên trang, điền thông tin khóa học, video và câu hỏi.
-3. Chọn file Excel và thư mục video, Builder sẽ kiểm tra và báo lỗi cần sửa.
-4. Muốn lấy mốc cho câu hỏi pop-up: ở bước **"Đặt pop-up"**, phát video, bấm **"Đặt pop-up tại đây"**, rồi **"Copy bảng"** dán vào Excel.
-5. Bấm **"Mở xem thử"** để học thử đúng như học viên.
+2. Bấm **"Tải file Excel mẫu"** trên trang, lưu vào thư mục khóa (cùng chỗ với video). Chưa cần điền xong.
+3. Bấm **"Chọn thư mục khóa"**. Builder tự tìm file Excel trong thư mục.
+4. Ở bước **"Đặt pop-up"**: phát video, bấm **"Đặt pop-up tại đây"**, rồi **"Copy bảng"** dán vào sheet Câu hỏi. Excel chưa có danh sách video thì bấm **"Copy danh sách video"** dán vào sheet Video trước.
+5. Điền câu hỏi, lưu Excel, bấm **"Kiểm tra lại"** (thanh trên cùng) để xem lỗi. Sửa và kiểm tra lại đến khi hết lỗi; bấm **"Mở xem thử"** để học thử đúng như học viên.
 6. Hết lỗi thì bấm **"Xuất gói SCORM"**, lưu file `SCORM_<Mã khóa>.zip` rồi đưa lên Workday. Builder hiện sẵn tên, mã, mô tả, thời lượng để copy sang Workday.
 
 Không cần cài đặt hay chạy lệnh gì. Video và đề thi không rời khỏi máy bạn.

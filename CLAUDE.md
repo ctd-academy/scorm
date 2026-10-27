@@ -53,9 +53,9 @@ builder/                   Builder web (Vite + JS thuần)
   src/course.js            đọc khóa + kiểm tra lỗi, phải khớp read_excel() của build_scorm.py
   src/zip.js               ghi zip streaming (CRC + kích thước ghi thẳng vào header, không dùng data descriptor)
   src/package.js           đóng gói SCORM: course.js + imsmanifest.xml, phải khớp build() của build_scorm.py
-  src/popups.js            bước 3: phát video, bấm lấy mốc pop-up, copy bảng dán vào Excel
+  src/popups.js            bước 2: phát video, bấm lấy mốc pop-up, copy bảng dán vào Excel; chưa có Excel thì xếp video theo thư mục
   src/preview.js           bước 4: chạy Player thật trong khung (player/preview.html do copy-assets tạo từ player/index.html)
-  src/main.js              giao diện 5 bước
+  src/main.js              giao diện 5 bước: chọn thư mục → đặt pop-up → kiểm tra → xem thử → xuất
   tests/*.test.mjs         test logic bằng Node (npm test), có so sánh dữ liệu và gói zip với build_scorm.py
   scripts/copy-assets.mjs  chép player/, template, logo vào builder/public/ (thư mục sinh ra, không sửa tay);
                            tạo player/preview.html (đọc COURSE từ trang Builder) và player-files.json
@@ -87,7 +87,7 @@ Cần: Python 3 + `openpyxl` + `playwright`, Node 18+, `ffmpeg`/`ffprobe`.
 - `cmi.suspend_data` của SCORM 1.2 giới hạn **4.096 ký tự**. Player đã lưu dạng JSON gọn; đừng thêm dữ liệu lớn vào đó.
 - Excel có thể tự đổi "01:30" thành giờ 01:30. `build_scorm.py` hiểu lại thành phút:giây; Builder làm giống vậy (`parseTime` trong `builder/src/course.js`).
 - **Không dùng SheetJS:** bản mới chỉ có ở cdn.sheetjs.com (không cài được trong môi trường của Claude), bản trên npm (0.18.5) cũ và có lỗ hổng. Builder tự đọc .xlsx trong `builder/src/xlsx.js`.
-- Chrome không đọc lại được file Excel đã sửa sau khi chọn: người dùng phải bấm chọn lại file.
+- Chrome không đọc lại được File đã sửa nếu lấy từ `<input type=file>`. Vì vậy Builder dùng `showDirectoryPicker()` (Chrome/Edge): nút "Kiểm tra lại" đọc lại thư mục, lấy File mới. Trình duyệt khác phải chọn lại thư mục. Test Playwright giả lập thư mục bằng `FAKE_DIR` trong `tests/test_builder.py`.
 - Trainer để video trong các thư mục chủ đề (`01. Tong quan/…`). Builder và `build_scorm.py` tìm video theo tên ở mọi thư mục con; trùng tên thì bắt ghi rõ thư mục.
 - Tên sheet so khớp không phân biệt hoa thường/khoảng trắng; `xlsx.js` bỏ tiền tố namespace của thẻ (`<x:sheet>`) và tìm workbook qua `_rels/.rels`.
 - Gói zip: video và font lưu **STORED** (không nén lại), file text nén DEFLATE.
