@@ -107,6 +107,7 @@ Quy tắc đọc Excel: xem `read_excel()` trong `tools/build_scorm.py`. Dòng v
 - Soạn câu hỏi trong Builder (vẫn dùng Excel; Copilot soạn nháp trong Excel)
 - Xuất file nhập hàng loạt Workday (EIB): chờ Workday trả lời có hỗ trợ không
 - SCORM 2004, xAPI
+- Hướng dẫn viết 1 trang cho trainer: chưa cần, làm sau khi cần (đã bỏ khỏi các mốc; phần deploy lên GitHub Pages đã làm ở M1)
 
 ## 7. Các mốc
 
@@ -115,7 +116,6 @@ Quy tắc đọc Excel: xem `read_excel()` trong `tools/build_scorm.py`. Dòng v
 | M1 ✅ | Khung Vite, copy Player, đọc Excel + thư mục video, màn hình kiểm tra lỗi | Khóa demo hiện đúng tóm tắt; cố tình làm sai 5 loại lỗi thì báo đúng dòng |
 | M2 ✅ | Xuất zip streaming + thông tin Workday | Test tương đương với `build_scorm.py` đạt; 26/26 test Player đạt trên gói của Builder; xuất được khóa giả lập 1,5 GB không treo máy |
 | M3 ✅ | Xem thử + đặt pop-up | Xem thử chạy đúng luật chơi; mốc đặt bằng nút khớp với giây trên video demo |
-| M4 | Deploy + hướng dẫn 1 trang | Link chạy trên Chrome/Edge (Windows và Mac); `docs/HUONG_DAN_TRAINER.md` ≤ 1 trang |
 
 ## 8. Việc Alex cần cung cấp
 

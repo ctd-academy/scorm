@@ -11,7 +11,7 @@ Repo này gồm 2 phần:
 | Phần | Trạng thái | Vai trò |
 |---|---|---|
 | `player/` | ✅ Xong, 26/26 test đạt | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
-| `builder/` | 🟡 **M1–M3 xong** (kiểm tra lỗi, đặt pop-up, xem thử, xuất zip SCORM), còn M4 (hướng dẫn 1 trang cho trainer) | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
+| `builder/` | ✅ v1 xong (M1–M3: kiểm tra lỗi, đặt pop-up, xem thử, xuất zip SCORM), chạy tại https://ctd-academy.github.io/scorm/ | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
 
 Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&OD, không phải lập trình viên.
 

@@ -113,7 +113,7 @@ Mỗi khóa = 1 file Excel chép từ **template chuẩn, trống** `templates/M
 
 Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn file → kiểm tra → đặt pop-up → xem thử → xuất), xử lý hoàn toàn trên trình duyệt, đầu ra tương đương `tools/build_scorm.py`.
 
-**Tiến độ:** M1 ✅ (chọn file, đọc Excel + thư mục video, màn hình kiểm tra lỗi) · M2 ✅ (xuất zip SCORM streaming, thông tin Workday; khóa 1,5 GB xuất trong ~30 giây, RAM tăng ~150 MB) · M3 ✅ (đặt pop-up bằng nút bấm, xem thử bằng Player thật) · M4 hướng dẫn trainer. Deploy tự động lên GitHub Pages khi `main` thay đổi.
+**Tiến độ:** M1 ✅ (chọn file, đọc Excel + thư mục video, màn hình kiểm tra lỗi) · M2 ✅ (xuất zip SCORM streaming, thông tin Workday; khóa 1,5 GB xuất trong ~30 giây, RAM tăng ~150 MB) · M3 ✅ (đặt pop-up bằng nút bấm, xem thử bằng Player thật). Builder v1 xong. Hướng dẫn trainer: chưa cần, làm sau khi cần. Deploy tự động lên GitHub Pages khi `main` thay đổi.
 
 ## 8. Việc còn mở cần hỏi Workday / IT ❓
 
@@ -131,7 +131,7 @@ Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn file →
 
 ## 9. Lộ trình và ước tính
 
-**Xây công cụ (~6 tuần):** Thiết kế (xong) → Player v1 (xong) → Builder web v1 (~1 tuần) → Pilot 3 khóa trên Workday sandbox (2 tuần: 1 khóa ngắn, 1 khóa dài nhất ~120 phút, 1 khóa nhiều câu hỏi) → Chốt v1, hướng dẫn 1 trang, đào tạo team (1 tuần).
+**Xây công cụ (~6 tuần):** Thiết kế (xong) → Player v1 (xong) → Builder web v1 (~1 tuần) → Pilot 3 khóa trên Workday sandbox (2 tuần: 1 khóa ngắn, 1 khóa dài nhất ~120 phút, 1 khóa nhiều câu hỏi) → Chốt v1, đào tạo team (1 tuần). Hướng dẫn viết cho trainer: làm sau khi cần.
 
 **Kịch bản 1 – chuyển 150 khóa:** kiểm kê và sàng lọc → pilot → chuyển hàng loạt ~1,5–2,5 giờ/khóa (≈225–375 giờ công; 4 trainer × ~10 giờ/tuần → 6–9 tuần) → nhập lịch sử học. Tổng khoảng 3 tháng. Ưu tiên khóa bắt buộc/an toàn.
 
