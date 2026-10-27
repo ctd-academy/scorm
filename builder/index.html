@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coteccons SCORM Builder</title>
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <header class="hdr">
+    <img class="logo" src="./assets/coteccons-logo-white.png" alt="Coteccons">
+    <span class="sep"></span>
+    <div class="ttl"><b>SCORM Builder</b><small>Đóng gói khóa học e-learning cho Workday</small></div>
+  </header>
+
+  <main>
+    <p class="intro">Chọn file Excel và thư mục video của khóa học. Mọi thứ chạy ngay trên máy bạn: <b>video và đề thi không được tải lên đâu cả</b>.</p>
+
+    <section class="step" id="step1">
+      <h2><span class="num">1</span>Chọn file</h2>
+      <div class="pick">
+        <label class="btn">Chọn file Excel khóa học<input type="file" id="excel" accept=".xlsx"></label>
+        <span class="status" id="excelStatus">Chưa chọn</span>
+      </div>
+      <div class="pick">
+        <label class="btn">Chọn thư mục video<input type="file" id="folder" webkitdirectory multiple></label>
+        <span class="status" id="folderStatus">Chưa chọn</span>
+      </div>
+      <div class="pick">
+        <label class="btn btn-ghost">Chọn file logo (không bắt buộc)<input type="file" id="logo" accept="image/png,image/jpeg,image/svg+xml"></label>
+        <span class="status" id="logoStatus">Không chọn = dùng logo Coteccons có sẵn</span>
+      </div>
+      <p class="note">Video có thể nằm ngay trong thư mục hoặc trong thư mục con <code>videos</code>. Trình duyệt có thể hỏi "Tải lên?": cứ bấm <b>Tải lên</b>, file vẫn chỉ nằm trên máy bạn.</p>
+      <p class="note">Chưa có file Excel? <a href="./assets/Mau_nhap_lieu_khoa_hoc.xlsx" download>Tải file Excel mẫu</a></p>
+    </section>
+
+    <section class="step locked" id="step2">
+      <h2><span class="num">2</span>Kiểm tra</h2>
+      <div id="check"><p class="note">Chọn file Excel và thư mục video để kiểm tra.</p></div>
+    </section>
+
+    <section class="step locked" id="step3">
+      <h2><span class="num">3</span>Đặt pop-up <small>(không bắt buộc)</small></h2>
+      <p class="note">Sắp có: phát video và bấm "Đặt pop-up tại đây" để lấy mốc thời gian.</p>
+    </section>
+
+    <section class="step locked" id="step4">
+      <h2><span class="num">4</span>Xem thử</h2>
+      <p class="note">Sắp có: chạy thử khóa học đúng như học viên sẽ thấy.</p>
+    </section>
+
+    <section class="step locked" id="step5">
+      <h2><span class="num">5</span>Xuất gói SCORM</h2>
+      <p class="note">Sắp có: xuất file <code>SCORM_&lt;Mã khóa&gt;.zip</code> để đưa lên Workday.</p>
+    </section>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

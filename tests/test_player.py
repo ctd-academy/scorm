@@ -1,7 +1,7 @@
 """26 bài test tự động cho Player v1 (Playwright + Chromium).
 
 Chuẩn bị (từ gốc repo):
-  python3 tools/build_scorm.py templates/Mau_nhap_lieu_khoa_hoc.xlsx demo-course out
+  python3 tools/build_scorm.py demo-course/ATLD-DEMO.xlsx demo-course out
   rm -rf out/test && mkdir -p out/test/course && cp tests/lms.html out/test/
   (cd out/test/course && unzip -q ../../SCORM_ATLD-DEMO.zip)
   npx http-server out/test -p 8765 -s -c-1 &      # BẮT BUỘC server hỗ trợ HTTP Range
