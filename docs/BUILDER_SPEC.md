@@ -34,7 +34,7 @@ Trình duyệt của trainer (Chrome/Edge)
 
 **Bước 1 – Chọn file**
 - Nút "Chọn file Excel khóa học" (.xlsx)
-- Nút "Chọn thư mục video" (chấp nhận video nằm ngay trong thư mục hoặc trong thư mục con `videos/`, giống `build_scorm.py`)
+- Nút "Chọn thư mục video": tìm video ở **mọi thư mục con** theo tên file ghi trong Excel (giống `find_file()` của `build_scorm.py`). Hai file trùng tên ở hai thư mục → báo lỗi, trainer ghi rõ thư mục, ví dụ `01. Tong quan/gioi-thieu.mp4`
 - Tùy chọn: chọn file logo
 - Có link tải **file Excel mẫu** (`templates/Mau_nhap_lieu_khoa_hoc.xlsx`)
 

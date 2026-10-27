@@ -65,22 +65,31 @@ function similar(name, candidates) {
 
 /**
  * sheets:    kết quả readXlsx()
- * folder:    { root: [{name, size}], videos: [{name, size}] }  file ở gốc thư mục khóa và trong videos/
- * durations: Map tên file -> giây (null nếu trình duyệt không mở được); bỏ qua nếu chưa đo
- * logoFile:  { name, size } nếu người dùng chọn riêng file logo
+ * folder:    [{ path, name, size, file }] mọi file trong thư mục khóa (kể cả thư mục con);
+ *            path tính từ thư mục khóa, dùng "/", ví dụ "01. Tong quan/gioi-thieu.mp4"
+ * durations: Map path -> giây (null nếu trình duyệt không mở được); bỏ qua nếu chưa đo
+ * logoFile:  File/Blob có name, size nếu người dùng chọn riêng file logo
  *
- * Trả về { course, errors, warnings, files } với files: [{ zipPath, file }] cần đưa vào gói.
+ * Trả về { course, errors, warnings, files } với files: [{ zipPath, path, file }] cần đưa vào gói.
  */
 export function readCourse(sheets, folder, durations = null, logoFile = null) {
   const errors = [];
   const warnings = [];
   const at = (sheet, r, msg) => `Sheet ${sheet}, dòng ${r}: ${msg}`;
 
-  const missing = Object.values(SHEETS).filter((s) => !sheets[s]);
+  // Tìm sheet theo tên, không phân biệt hoa thường, khoảng trắng thừa, kiểu gõ dấu
+  const norm = (n) => cell(n).toLowerCase().replace(/\s+/g, " ");
+  const byName = new Map(Object.keys(sheets).map((n) => [norm(n), sheets[n]]));
+  const got = Object.fromEntries(Object.values(SHEETS).map((n) => [n, byName.get(norm(n))]));
+  const missing = Object.values(SHEETS).filter((n) => !got[n]);
   if (missing.length) {
-    errors.push(`File Excel thiếu sheet ${missing.map((s) => `'${s}'`).join(", ")}. Hãy dùng đúng file mẫu.`);
+    const found = Object.keys(sheets);
+    errors.push(`File Excel thiếu sheet ${missing.map((n) => `'${n}'`).join(", ")}. ` +
+      (found.length ? `File đang có các sheet: ${found.map((n) => `'${n}'`).join(", ")}. ` : "") +
+      "Hãy tải file Excel mẫu ở bước 1 và chép nội dung sang, giữ nguyên tên sheet.");
     return { course: null, errors, warnings, files: [] };
   }
+  sheets = got;
 
   // ---- Thông tin khóa (dòng 2–11: cột A là mục, cột B là giá trị)
   const info = {}, infoRow = {};
@@ -118,7 +127,20 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
   };
 
   const files = [];
-  const findIn = (list, name) => list.find((f) => f.name === name) || list.find((f) => f.name.toLowerCase() === name.toLowerCase());
+  // Tìm file theo tên ghi trong Excel: đúng đường dẫn, hoặc chỉ tên file ở bất kỳ thư mục con nào.
+  // Trả về { entry } hoặc { dup: [đường dẫn trùng tên] } hoặc {} nếu không có.
+  const lower = (x) => x.toLowerCase();
+  const findFile = (want) => {
+    const w = lower(want.replace(/\\/g, "/").replace(/^\.?\//, ""));
+    const exact = folder.find((f) => lower(f.path) === w);
+    if (exact || w.includes("/")) return exact ? { entry: exact } : {};
+    const same = folder.filter((f) => lower(f.name) === w);
+    if (same.length <= 1) return same.length ? { entry: same[0] } : {};
+    const inVideos = same.filter((f) => lower(f.path) === "videos/" + w);
+    return inVideos.length ? { entry: inVideos[0] } : { dup: same.map((f) => f.path) };
+  };
+  const dupMsg = (fname, dup) =>
+    `có ${dup.length} file tên '${fname}' ở các thư mục khác nhau (${dup.map((p) => `'${p}'`).join(", ")}). Hãy ghi rõ thư mục, ví dụ '${dup[0]}'`;
 
   // ---- Logo: chọn riêng, hoặc tên file trong Excel nằm ở gốc thư mục khóa
   let logo = cell(info["File logo (tùy chọn)"]);
@@ -127,14 +149,17 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
     logo = logoFile.name;
     logoSrc = logoFile;
   } else if (logo) {
-    logoSrc = findIn(folder.root, logo);
-    if (!logoSrc)
+    const found = findFile(logo);
+    logoSrc = found.entry ? found.entry.file : null;
+    if (found.dup) errors.push(at(SHEETS.info, infoRow["File logo (tùy chọn)"], dupMsg(logo, found.dup)));
+    else if (!logoSrc)
       errors.push(at(SHEETS.info, infoRow["File logo (tùy chọn)"], `không tìm thấy file logo '${logo}' trong thư mục bạn chọn. Đặt logo vào thư mục khóa, hoặc chọn file logo ở bước 1`));
+    logo = logo.split(/[\\/]/).pop();
   }
   if (logoSrc) files.push({ zipPath: "assets/" + logo, file: logoSrc });
 
   // ---- Video (bỏ qua dòng có STT bắt đầu bằng "(Ví dụ)")
-  const allVideos = [...folder.root, ...folder.videos].filter((f) => VIDEO_EXT.test(f.name));
+  const allVideos = folder.filter((f) => VIDEO_EXT.test(f.name));
   const videos = [];
   const videoRows = [];
   const used = new Set();
@@ -142,16 +167,19 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
   for (let r = 2; r < vrows.length; r++) {
     const row = vrows[r];
     if (!row || !cell(row[3]) || cell(row[1]).startsWith("(Ví dụ)")) continue;
-    const fname = cell(row[3]);
-    const src = findIn(folder.root, fname) || findIn(folder.videos, fname);
-    if (!src) {
-      const hint = similar(fname, allVideos.map((f) => f.name));
-      errors.push(at(SHEETS.video, r, `không tìm thấy video '${fname}' trong thư mục bạn chọn` + (hint ? `. Có phải ý bạn là '${hint}'?` : "")));
+    const fname = cell(row[3]).replace(/\\/g, "/");
+    const { entry: src, dup } = findFile(fname);
+    if (dup) {
+      errors.push(at(SHEETS.video, r, dupMsg(fname, dup)));
+    } else if (!src) {
+      const hint = similar(fname.split("/").pop(), allVideos.map((f) => f.name));
+      const where = hint && allVideos.find((f) => f.name === hint).path;
+      errors.push(at(SHEETS.video, r, `không tìm thấy video '${fname}' trong thư mục bạn chọn` + (hint ? `. Có phải ý bạn là '${hint}'${where !== hint ? ` (trong '${where.slice(0, -hint.length - 1)}')` : ""}?` : "")));
     } else {
       used.add(src);
-      files.push({ zipPath: "videos/" + fname, file: src });
+      files.push({ zipPath: "videos/" + fname, path: src.path, file: src.file });
       if (!/\.mp4$/i.test(fname)) warnings.push(at(SHEETS.video, r, `video '${fname}' không phải .mp4, có thể không phát được trên mọi máy. Nên xuất lại dạng .mp4`));
-      if (durations && durations.has(src.name) && !durations.get(src.name))
+      if (durations && durations.has(src.path) && !durations.get(src.path))
         errors.push(at(SHEETS.video, r, `trình duyệt không mở được video '${fname}'. Hãy xuất lại video dạng .mp4 (H.264)`));
     }
     videos.push({ title: cell(row[2]) || `Bài ${videos.length + 1}`, file: fname, src });
@@ -161,9 +189,9 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
     errors.push(`Sheet ${SHEETS.video}: chưa có video nào. Nhập dữ liệu từ dòng 3`);
   const unused = allVideos.filter((f) => !used.has(f));
   if (videos.length && unused.length)
-    warnings.push(`Thư mục có ${unused.length} video không dùng trong Excel: ${unused.slice(0, 5).map((f) => `'${f.name}'`).join(", ")}${unused.length > 5 ? "…" : ""}`);
+    warnings.push(`Thư mục có ${unused.length} video không dùng trong Excel: ${unused.slice(0, 5).map((f) => `'${f.path}'`).join(", ")}${unused.length > 5 ? "…" : ""}`);
 
-  const duration = (v) => (durations && v.src ? Math.round(durations.get(v.src.name) || 0) : 0);
+  const duration = (v) => (durations && v.src ? Math.round(durations.get(v.src.path) || 0) : 0);
 
   // ---- Câu hỏi (bỏ qua dòng có câu hỏi bắt đầu bằng "(Ví dụ)")
   const popups = [], quiz = [], popupRows = [];

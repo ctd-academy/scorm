@@ -130,7 +130,7 @@ with sync_playwright() as p:
     items = page.locator(".list.errors li").all_inner_texts()
     expect = [
         "Sheet Thông tin khóa, dòng 2: Mã khóa 'ATLD DEMO'",
-        "Sheet Video, dòng 4: không tìm thấy video '02_bao-ho-ca-nhan.mp' trong thư mục bạn chọn. Có phải ý bạn là '02_bao-ho-ca-nhan.mp4'?",
+        "Sheet Video, dòng 4: không tìm thấy video '02_bao-ho-ca-nhan.mp' trong thư mục bạn chọn. Có phải ý bạn là '02_bao-ho-ca-nhan.mp4' (trong 'videos')?",
         "Sheet Câu hỏi, dòng 3: mốc 02:00 vượt quá thời lượng video 1 (00:55)",
         "Sheet Câu hỏi, dòng 5: 'Video số' phải từ 1 đến 3",
         "Sheet Câu hỏi, dòng 7: đáp án đúng 'E' không hợp lệ",
@@ -156,6 +156,27 @@ with sync_playwright() as p:
     check("Không có hộp thoại lưu: tải về được", dl.value.suggested_filename == "SCORM_ATLD-DEMO.zip", dl.value.suggested_filename)
     same_as_python(fallback, DEMO, "Gói tải về từ bộ nhớ")
     page2.close()
+
+    # ---- Thư mục giống khóa Hội nhập: mỗi video một thư mục chủ đề, Excel nằm ngay trong thư mục
+    nested = os.path.join(tmp, "E-learning")
+    for sub, name in (("01. Tong quan", "01_vi-sao-an-toan.mp4"), ("02. Chinh sach phuc loi", "02_bao-ho-ca-nhan.mp4"), ("05. ATLD", "03_nhan-dien-moi-nguy.mp4")):
+        os.makedirs(os.path.join(nested, sub))
+        shutil.copy(os.path.join(DEMO, "videos", name), os.path.join(nested, sub, name))
+    shutil.copy(os.path.join(DEMO, "ATLD-DEMO.xlsx"), os.path.join(nested, "ATLD-DEMO.xlsx"))
+    open(os.path.join(nested, "~$ATLD-DEMO.xlsx"), "wb").close()  # file khóa Excel tạo ra khi đang mở file
+    page4 = b.new_page(viewport={"width": 1366, "height": 768})
+    page4.add_init_script(SAVE_STUB)
+    load_demo(page4, folder=nested)
+    check("Video trong thư mục con: đếm đủ 3 video", page4.inner_text("#folderStatus") == "E-learning (3 video)", page4.inner_text("#folderStatus"))
+    check("Video trong thư mục con: không có lỗi", page4.locator(".verdict.ok").count() == 1, page4.inner_text("#check")[:300])
+    page4.click("#exportBtn")
+    page4.wait_for_selector("#exportState .verdict", timeout=60000)
+    with page4.expect_download() as dl:
+        page4.evaluate(PULL_SAVED)
+    nested_zip = os.path.join(tmp, "nested.zip")
+    dl.value.save_as(nested_zip)
+    same_as_python(nested_zip, nested, "Video trong thư mục con")
+    page4.close()
 
     # ---- Khóa giả lập ~1,5 GB: ghi streaming, RAM không tăng theo dung lượng
     if os.environ.get("LARGE"):

@@ -12,15 +12,11 @@ const MEMORY_LIMIT = 500 * 1024 ** 2; // trình duyệt không ghi thẳng xuố
 const durationCache = new WeakMap(); // File -> giây (null nếu không mở được)
 let runId = 0;
 
-// Thư mục khóa: file ở gốc và file trong thư mục con videos/ (giống build_scorm.py)
-function splitFolder(files) {
-  const root = [], videos = [];
-  for (const f of files) {
-    const parts = (f.webkitRelativePath || f.name).split("/");
-    if (parts.length === 2) root.push(f);
-    else if (parts.length === 3 && parts[1].toLowerCase() === "videos") videos.push(f);
-  }
-  return { root, videos };
+// Mọi file trong thư mục khóa, kể cả thư mục con; path tính từ thư mục khóa
+function folderEntries(files) {
+  return files
+    .map((f) => ({ path: (f.webkitRelativePath || f.name).split("/").slice(1).join("/") || f.name, name: f.name, size: f.size, file: f }))
+    .filter((e) => !e.name.startsWith("~$") && !e.name.startsWith("."));
 }
 
 function videoDuration(file) {
@@ -80,15 +76,15 @@ async function check() {
     return;
   }
 
-  const folder = splitFolder(state.folder);
+  const folder = folderEntries(state.folder);
   // Lần 1: biết cần những video nào; đo thời lượng; lần 2: kiểm tra đầy đủ
   const first = readCourse(sheets, folder, null, state.logo);
-  const videoFiles = first.files.filter((f) => f.zipPath.startsWith("videos/")).map((f) => f.file);
+  const videoFiles = first.files.filter((f) => f.zipPath.startsWith("videos/"));
   const durations = new Map();
   for (let i = 0; i < videoFiles.length; i++) {
     if (my !== runId) return;
     showCheck(`<div class="verdict busy">Đang đọc thời lượng video ${i + 1}/${videoFiles.length}…</div>`);
-    durations.set(videoFiles[i].name, await videoDuration(videoFiles[i]));
+    durations.set(videoFiles[i].path, await videoDuration(videoFiles[i].file));
   }
   if (my !== runId) return;
   const result = readCourse(sheets, folder, durations, state.logo);
@@ -261,8 +257,7 @@ $("folder").addEventListener("change", (e) => {
   const files = [...e.target.files];
   state.folder = files.length ? files : null;
   state.folderName = files.length ? (files[0].webkitRelativePath || "").split("/")[0] : "";
-  const { root, videos } = splitFolder(files);
-  const n = [...root, ...videos].filter((f) => /\.(mp4|m4v|mov|webm|avi|mkv|wmv)$/i.test(f.name)).length;
+  const n = files.filter((f) => /\.(mp4|m4v|mov|webm|avi|mkv|wmv)$/i.test(f.name)).length;
   $("folderStatus").textContent = files.length ? `${state.folderName} (${n} video)` : "Chưa chọn";
   $("folderStatus").className = "status" + (files.length ? " ok" : "");
   e.target.value = "";
