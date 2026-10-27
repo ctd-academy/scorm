@@ -11,7 +11,7 @@ Repo này gồm 2 phần:
 | Phần | Trạng thái | Vai trò |
 |---|---|---|
 | `player/` | ✅ Xong, 26/26 test đạt | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
-| `builder/` | 🟡 Đang xây: **M1 + M2 xong** (kiểm tra lỗi, xuất zip SCORM), tiếp theo M3 (xem thử + đặt pop-up) | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
+| `builder/` | 🟡 **M1–M3 xong** (kiểm tra lỗi, đặt pop-up, xem thử, xuất zip SCORM), còn M4 (hướng dẫn 1 trang cho trainer) | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
 
 Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&OD, không phải lập trình viên.
 
@@ -53,9 +53,12 @@ builder/                   Builder web (Vite + JS thuần)
   src/course.js            đọc khóa + kiểm tra lỗi, phải khớp read_excel() của build_scorm.py
   src/zip.js               ghi zip streaming (CRC + kích thước ghi thẳng vào header, không dùng data descriptor)
   src/package.js           đóng gói SCORM: course.js + imsmanifest.xml, phải khớp build() của build_scorm.py
+  src/popups.js            bước 3: phát video, bấm lấy mốc pop-up, copy bảng dán vào Excel
+  src/preview.js           bước 4: chạy Player thật trong khung (player/preview.html do copy-assets tạo từ player/index.html)
   src/main.js              giao diện 5 bước
   tests/*.test.mjs         test logic bằng Node (npm test), có so sánh dữ liệu và gói zip với build_scorm.py
-  scripts/copy-assets.mjs  chép player/, template, logo vào builder/public/ (thư mục sinh ra, không sửa tay)
+  scripts/copy-assets.mjs  chép player/, template, logo vào builder/public/ (thư mục sinh ra, không sửa tay);
+                           tạo player/preview.html (đọc COURSE từ trang Builder) và player-files.json
 .github/workflows/pages.yml  test + deploy Builder lên GitHub Pages khi main thay đổi
 ```
 
@@ -71,7 +74,7 @@ python3 tests/test_player.py
 (cd builder && npm install && npm test)        # test logic (cần python3 + openpyxl, ffprobe)
 (cd builder && npm run dev)                    # chạy thử trên máy
 (cd builder && npm run build) && npx http-server builder/dist -p 8766 -s -c-1 &
-python3 tests/test_builder.py                  # test giao diện Builder + xuất gói (thêm LARGE=1: khóa 1,5 GB)
+python3 tests/test_builder.py                  # test giao diện Builder: kiểm tra, đặt pop-up, xem thử, xuất gói (thêm LARGE=1: khóa 1,5 GB)
 # gói Builder xuất ra nằm ở out/test-builder/SCORM_ATLD-DEMO.zip: giải nén vào out/test/course rồi chạy test_player.py
 ```
 

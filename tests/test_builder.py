@@ -1,4 +1,4 @@
-"""Test giao diện Builder (Playwright + Chromium): chọn file -> kiểm tra -> xuất gói SCORM.
+"""Test giao diện Builder (Playwright + Chromium): chọn file -> kiểm tra -> đặt pop-up -> xem thử -> xuất gói.
 
 Chuẩn bị (từ gốc repo):
   (cd builder && npm install && npm run build)
@@ -125,6 +125,61 @@ with sync_playwright() as p:
     dl.value.save_as(zip_path)
     same_as_python(zip_path, DEMO, "Gói ghi xuống ổ cứng")
 
+    # ---- Bước 3: đặt pop-up bằng nút bấm
+    page.context.grant_permissions(["clipboard-read", "clipboard-write"])
+    check("Bước 3 mở", "locked" not in page.get_attribute("#step3", "class"))
+    check("Bước 3: chọn được 3 video", page.locator("#pvSelect option").count() == 3)
+    check("Bước 3: hiện pop-up đã có trong Excel", "00:15, 00:40" in page.inner_text("#pvExisting"), page.inner_text("#pvExisting"))
+    def place(video_no, sec):
+        page.select_option("#pvSelect", str(video_no - 1))
+        page.wait_for_function("document.getElementById('pvVideo').readyState >= 1")
+        page.evaluate(f"""() => new Promise((ok) => {{ const v = document.getElementById('pvVideo');
+            v.addEventListener('seeked', ok, {{ once: true }}); v.currentTime = {sec}; }})""")
+        page.click("#pvAdd")
+    place(1, 15.6)
+    check("Đặt pop-up: đồng hồ hiện 00:15 khi video ở giây 15,6", page.inner_text("#pvClock") == "00:15", page.inner_text("#pvClock"))
+    # khung hình ở giây 15,6 của video demo có đồng hồ 0:00:15: chụp lại để đối chiếu bằng mắt
+    page.locator("#pvVideo").screenshot(path=SHOTS + "4_dat_popup_15s.png")
+    place(2, 33.2)
+    place(1, 15.1)  # cùng giây 15 với mốc đầu: không thêm trùng
+    rows = page.locator("table.placed tbody tr").all_inner_texts()
+    check("Đặt pop-up: bảng có đúng 2 mốc, sắp theo video", [r.split("\t")[:3] for r in rows] == [["POPUP", "1", "00:15"], ["POPUP", "2", "00:33"]], rows)
+    page.click("#pvCopy")
+    clip = page.evaluate("navigator.clipboard.readText()")
+    check("Copy bảng: dán được vào 3 cột Loại, Video số, Mốc thời gian", clip == "POPUP\t1\t00:15\r\nPOPUP\t2\t00:33", repr(clip))
+    page.set_input_files("#excel", os.path.join(DEMO, "ATLD-DEMO.xlsx"))  # chọn lại Excel sau khi sửa
+    page.wait_for_selector("#pvList table.placed", timeout=30000)
+    check("Chọn lại Excel: vẫn giữ các mốc đã đặt", page.locator("table.placed tbody tr").count() == 2)
+    page.screenshot(path=SHOTS + "5_dat_popup.png", full_page=True)
+
+    # ---- Bước 4: xem thử bằng Player thật
+    check("Bước 4 mở", "locked" not in page.get_attribute("#step4", "class"))
+    page.click("#pvOpen")
+    page.wait_for_selector("#pvFrame")
+    f = page.frame_locator("#pvFrame")
+    f.locator("#courseTitle").wait_for()
+    fr = next(x for x in page.frames if x.url.endswith("/player/preview.html"))
+    check("Xem thử: hiện tên khóa và nhãn Xem thử", fr.inner_text("#courseTitle") == "An toàn lao động cơ bản (Demo)" and fr.locator(".preview-badge").count() == 1)
+    fr.wait_for_function("document.getElementById('vid') && document.getElementById('vid').readyState >= 1", timeout=15000)
+    check("Xem thử: video phát từ máy người dùng (Blob URL)", fr.evaluate("document.getElementById('vid').src").startswith("blob:"))
+    check("Xem thử: bài 2 và bài kiểm tra đang khóa", fr.evaluate("[1, 3].every(i => document.querySelectorAll('#tocList li')[i].classList.contains('locked'))"))
+    fr.evaluate("() => { const v = document.getElementById('vid'); v.muted = true; v.currentTime = 30; }")
+    time.sleep(0.8)
+    check("Xem thử: chặn tua tới", fr.evaluate("document.getElementById('vid').currentTime") < 2, fr.evaluate("document.getElementById('vid').currentTime"))
+    fr.evaluate("document.getElementById('vid').playbackRate = 4")
+    time.sleep(0.3)
+    check("Xem thử: tốc độ tối đa 2x", fr.evaluate("document.getElementById('vid').playbackRate") == 2)
+    fr.evaluate("() => { const v = document.getElementById('vid'); v.playbackRate = 2; v.play(); }")
+    fr.wait_for_selector("#pop.show", timeout=20000)
+    t_pop = fr.evaluate("document.getElementById('vid').currentTime")
+    check("Xem thử: pop-up hiện ở mốc 0:15", 14.9 <= t_pop <= 16.5, round(t_pop, 2))
+    page.screenshot(path=SHOTS + "6_xem_thu.png", full_page=True)
+    fr.click("#resetBtn")  # nút Xóa tiến độ của Player: tải lại khung
+    page.wait_for_function("document.getElementById('pvFrame').contentDocument.getElementById('courseTitle')?.textContent === 'An toàn lao động cơ bản (Demo)'", timeout=15000)
+    check("Xem thử: Xóa tiến độ (tải lại khung) vẫn chạy", True)
+    page.click("#pvClose")
+    check("Xem thử: đóng được", page.locator("#pvFrame").count() == 0)
+
     page.set_input_files("#excel", bad)
     page.wait_for_selector(".verdict.bad", timeout=30000)
     items = page.locator(".list.errors li").all_inner_texts()
@@ -141,6 +196,8 @@ with sync_playwright() as p:
         check("Báo lỗi: " + e[:60], ok, "" if ok else items)
     check("Có lỗi thì bước 2 không đánh dấu xong", "done" not in page.get_attribute("#step2", "class"))
     check("Có lỗi thì bước 5 khóa", "locked" in page.get_attribute("#step5", "class"))
+    check("Có lỗi thì bước 4 (xem thử) khóa", "locked" in page.get_attribute("#step4", "class"))
+    check("Có lỗi vẫn đặt pop-up được (bước 3 mở)", "locked" not in page.get_attribute("#step3", "class"))
     page.screenshot(path=SHOTS + "2_loi.png", full_page=True)
 
     check("Không có lỗi JavaScript / 404", not errors, errors)

@@ -56,7 +56,7 @@ Trình duyệt của trainer (Chrome/Edge)
 
 **Bước 4 – Xem thử**
 - Mở Player trong iframe với dữ liệu khóa vừa đọc, video bằng Blob URL, chạy chế độ "Xem thử" (LMS giả lập có sẵn trong `scorm12.js`).
-- Gợi ý kỹ thuật: trang `preview.html` nạp `scorm12.js`, nhận `COURSE` qua `postMessage`, gán `window.COURSE`, rồi nạp `player.js`. Đường dẫn video trong `COURSE` thay bằng Blob URL chỉ khi xem thử.
+- Đã làm: `player/preview.html` được `scripts/copy-assets.mjs` tạo từ `player/index.html`, thay dòng nạp `course.js` bằng `window.COURSE = parent.__previewCourse` (đọc thẳng từ trang Builder, cùng nguồn gốc; không dùng `postMessage` để nút "Xóa tiến độ" tải lại khung vẫn chạy). Đường dẫn video và logo thay bằng Blob URL chỉ khi xem thử. File này không được đưa vào gói.
 
 **Bước 5 – Xuất**
 - Nút "Xuất gói SCORM" → hộp thoại lưu file (`showSaveFilePicker`) → ghi streaming → thanh tiến trình theo MB.
@@ -114,7 +114,7 @@ Quy tắc đọc Excel: xem `read_excel()` trong `tools/build_scorm.py`. Dòng v
 |---|---|---|
 | M1 ✅ | Khung Vite, copy Player, đọc Excel + thư mục video, màn hình kiểm tra lỗi | Khóa demo hiện đúng tóm tắt; cố tình làm sai 5 loại lỗi thì báo đúng dòng |
 | M2 ✅ | Xuất zip streaming + thông tin Workday | Test tương đương với `build_scorm.py` đạt; 26/26 test Player đạt trên gói của Builder; xuất được khóa giả lập 1,5 GB không treo máy |
-| M3 | Xem thử + đặt pop-up | Xem thử chạy đúng luật chơi; mốc đặt bằng nút khớp với giây trên video demo |
+| M3 ✅ | Xem thử + đặt pop-up | Xem thử chạy đúng luật chơi; mốc đặt bằng nút khớp với giây trên video demo |
 | M4 | Deploy + hướng dẫn 1 trang | Link chạy trên Chrome/Edge (Windows và Mac); `docs/HUONG_DAN_TRAINER.md` ≤ 1 trang |
 
 ## 8. Việc Alex cần cung cấp
