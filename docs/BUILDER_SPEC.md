@@ -12,7 +12,7 @@ Một trainer **không biết code** tự biến "1 file Excel + 1 thư mục vi
 ## 2. Kiến trúc
 
 ```
-Website tĩnh (HTML/CSS/JS) ── host trên Cloudflare Pages / GitHub Pages / Vercel Pro
+Website tĩnh (HTML/CSS/JS) ── host trên GitHub Pages
         │  trình duyệt tải về 1 lần
         ▼
 Trình duyệt của trainer (Chrome/Edge)
@@ -119,7 +119,7 @@ Quy tắc đọc Excel: xem `read_excel()` trong `tools/build_scorm.py`. Dòng v
 
 ## 8. Việc Alex cần cung cấp
 
-- Tài khoản GitHub của team (tạo repo) và nơi host đã chọn
-- Logo Coteccons bản trắng (PNG nền trong hoặc SVG) để đặt trên nền navy
-- Nội dung liên hệ L&OD thật (tên, email, SĐT) cho thông báo hết lượt
-- Một khóa thật (thư mục video + bộ câu hỏi) để pilot
+- ✅ Repo team: `ctd-academy/scorm` · Host: GitHub Pages
+- ✅ Logo: `brand/coteccons-logo-white.png` (trên nền navy, Player dùng `player/logo.png`) và `brand/coteccons-logo-color.png` (trên nền sáng, dùng cho giao diện Builder)
+- ✅ Liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn
+- Một khóa thật (thư mục video + bộ câu hỏi) để pilot: nằm trên máy Alex

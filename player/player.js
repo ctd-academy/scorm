@@ -22,7 +22,7 @@
     timeLimitMinutes: num(D.timeLimitMinutes, 0),
     showAnswers: !!D.showAnswers,
     maxSpeed: Math.min(2, num(D.maxSpeed, 2)),
-    contact: D.contact || "Vui lòng liên hệ L&OD Team để được hỗ trợ."
+    contact: D.contact || "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại."
   };
   var VIDEOS = C.videos || [];
   var POPUPS = (C.popups || []).map(function (p, i) { p.id = i; return p; });
@@ -99,7 +99,7 @@
 
   // ---------------------------------------------------------------- khung chung
   function renderShell() {
-    $("brand").innerHTML = C.logo ? '<img class="logo" src="' + esc(C.logo) + '" alt="Coteccons">' : '<span class="wordmark">COTECCONS</span>';
+    $("brand").innerHTML = '<img class="logo" src="' + esc(C.logo || "logo.png") + '" alt="Coteccons">';
     $("courseTitle").textContent = C.title || "";
     document.title = C.title || "Coteccons e-Learning";
     var name = SCORM.get("cmi.core.student_name");

@@ -66,9 +66,10 @@
 | 12 | Builder: **Excel là nơi nhập liệu chính**; Builder có chế độ "xem video, bấm đặt pop-up" để lấy mốc thời gian | ✅ |
 | 13 | Builder là **website tĩnh, không backend**: mọi xử lý chạy trên máy người dùng, video và đề thi không rời máy (27/10) | ✅ |
 | 14 | Ghi zip streaming thẳng xuống ổ cứng → team dùng **Chrome/Edge** bản mới | ✅ |
-| 15 | Code ở **GitHub tài khoản team**; host trên nơi cho phép dùng công việc (Cloudflare Pages / GitHub Pages, hoặc Vercel nếu có gói Pro) | 🟡 chờ chọn nơi host |
+| 15 | Code ở **GitHub tài khoản team** (`ctd-academy/scorm`); host trên **GitHub Pages** | ✅ |
 | 16 | **Không dùng Lovable** cho phần lõi; xây bằng Claude Code | ✅ |
 | 17 | IT chưa thấy chặn gì (27/10) | ✅ |
+| 18 | Logo mặc định trong Player: **logo Coteccons bản trắng** (`player/logo.png`); liên hệ khi hết lượt: **Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn** | ✅ |
 
 ## 5. Đã xây xong: Player v1
 
@@ -93,7 +94,7 @@
 | `cmi.suspend_data` | JSON gọn: `{v:[[đã xem xa nhất, vị trí, xong]], p:[id pop-up đã đúng], a:số lượt, s:điểm cao nhất, q:0/1/2}` (giới hạn 4.096 ký tự) |
 | `cmi.core.session_time`, `cmi.core.exit` | exit = "suspend" khi chưa xong, rỗng khi đạt/hết lượt |
 
-**Đã kiểm tra:** 26/26 tình huống tự động trên Chrome (Playwright) qua LMS giả lập.
+**Đã kiểm tra:** 26/26 tình huống tự động trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud**: ổn.
 
 **Phát hiện khi test:** tua lại video chỉ đúng khi máy chủ hỗ trợ tải từng phần (HTTP Range). Workday và SCORM Cloud thuộc loại này.
 
@@ -144,12 +145,11 @@ Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn file →
 - Xuất file lớn trên trình duyệt
 - App Workday mobile với SCORM
 - Phụ thuộc người giữ công cụ → repo và host thuộc tài khoản team, có hướng dẫn, giao 1 trainer làm đầu mối
-- Chưa có logo và nội dung liên hệ L&OD thật trong gói
 
 ## 11. Bước tiếp theo
 
-1. Xây Builder web v1 theo `docs/BUILDER_SPEC.md` (Claude Code)
-2. Alex thử gói demo trên SCORM Cloud (cloud.scorm.com), cả máy tính và điện thoại
-3. Alex gửi logo (bản trắng) + nội dung liên hệ L&OD + 1 khóa thật
+1. Xây Builder web v1 theo `docs/BUILDER_SPEC.md` (Claude Code), deploy lên GitHub Pages
+2. ~~Alex thử gói demo trên SCORM Cloud~~ ✅ · ~~logo + liên hệ L&OD~~ ✅
+3. Alex dùng khóa thật để pilot (khóa nằm trên máy Alex, đóng gói bằng Builder ngay trên máy)
 4. Hỏi Workday các câu ở mục 8
 5. Pilot 3 khóa thật trên Workday sandbox

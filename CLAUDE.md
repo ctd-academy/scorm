@@ -30,7 +30,7 @@ Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&O
 3. **Excel là nơi nhập liệu chính** (mẫu: `templates/Mau_nhap_lieu_khoa_hoc.xlsx`). Builder không thay Excel bằng form.
 4. **Player là nguồn chuẩn.** Builder nhúng nguyên `player/` vào gói, không viết lại luật chơi. Sửa luật chơi = sửa `player/` + chạy lại test.
 5. Luật chơi Player: học tuần tự · chỉ tua lại phần đã xem · tối đa 2x · chuyển tab thì dừng · pop-up không tính điểm, sai thì xem lại từ pop-up trước (hoặc đầu video) · bài thi tùy chỉnh theo khóa · hết lượt thì báo `failed`, khóa bài thi, hiện liên hệ L&OD · chứng nhận do Workday cấp.
-6. **Host:** repo và hosting thuộc **tài khoản team/công ty**, không phải tài khoản cá nhân. Ưu tiên nơi miễn phí cho phép dùng công việc (Cloudflare Pages, GitHub Pages). Vercel dùng được nếu công ty có gói Pro (gói Hobby chỉ cho mục đích cá nhân; kiểm tra điều khoản hiện hành trước khi chọn).
+6. **Host:** repo `ctd-academy/scorm` (tài khoản team) và host trên **GitHub Pages**.
 7. **Không dùng Lovable** cho phần lõi (đóng gói, Player). Có thể dùng để phác giao diện.
 
 ## Cấu trúc repo
@@ -40,7 +40,8 @@ CLAUDE.md                  file này
 README.md                  hướng dẫn nhanh cho người
 docs/HANDOFF.md            toàn bộ bối cảnh, quyết định, câu hỏi còn mở
 docs/BUILDER_SPEC.md       spec Builder web v1 ← đọc kỹ trước khi xây
-player/                    Player v1 (index.html, player.js, player.css, scorm12.js, fonts/)
+player/                    Player v1 (index.html, player.js, player.css, scorm12.js, logo.png, fonts/)
+brand/                     logo Coteccons gốc: bản trắng (nền tối) và bản màu (nền sáng)
 tools/build_scorm.py       động cơ đóng gói bằng Python = BẢN THAM CHIẾU cho Builder
 tools/make_template.py     tạo file Excel mẫu (kèm dữ liệu khóa demo)
 tools/setup_assets.sh      tải font, tạo Excel mẫu, tạo 3 video demo

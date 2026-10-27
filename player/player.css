@@ -31,7 +31,6 @@ button:disabled { cursor: default; opacity: .45; }
 /* ---------- Header ---------- */
 .hdr { background: var(--navy); color: #fff; padding: 12px 20px; display: flex; align-items: center; gap: 14px; }
 .hdr .logo { height: 30px; width: auto; display: block; }
-.hdr .wordmark { font-weight: 700; letter-spacing: .14em; font-size: 15px; color: #fff; }
 .hdr .sep { width: 1px; height: 26px; background: rgba(255,255,255,.25); }
 .hdr .ttl { flex: 1; min-width: 0; }
 .hdr .ttl b { display: block; font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
