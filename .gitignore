@@ -2,7 +2,7 @@ out/
 node_modules/
 dist/
 builder/dist/
-builder/public/player/
+builder/public/
 __pycache__/
 .DS_Store
 *.log

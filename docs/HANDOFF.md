@@ -100,7 +100,7 @@
 
 ## 6. File Excel nhập liệu
 
-Mỗi khóa = 1 file Excel (`templates/Mau_nhap_lieu_khoa_hoc.xlsx`). Ô nền vàng là ô cần điền; dòng 2 mỗi sheet là ví dụ (bị bỏ qua khi xuất).
+Mỗi khóa = 1 file Excel chép từ **template chuẩn, trống** `templates/Mau_nhap_lieu_khoa_hoc.xlsx` (Builder có link tải). Ô nền vàng là ô cần điền; dòng 2 mỗi sheet là ví dụ (bị bỏ qua khi xuất). Sheet "Hướng dẫn" có gợi ý cài đặt bài kiểm tra và cách viết câu hỏi pop-up. Khóa demo điền sẵn: `demo-course/ATLD-DEMO.xlsx`.
 
 | Sheet | Nội dung |
 |---|---|
@@ -112,6 +112,8 @@ Mỗi khóa = 1 file Excel (`templates/Mau_nhap_lieu_khoa_hoc.xlsx`). Ô nền v
 ## 7. Builder web v1
 
 Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn file → kiểm tra → đặt pop-up → xem thử → xuất), xử lý hoàn toàn trên trình duyệt, đầu ra tương đương `tools/build_scorm.py`.
+
+**Tiến độ:** M1 ✅ (chọn file, đọc Excel + thư mục video, màn hình kiểm tra lỗi) · M2 xuất zip · M3 xem thử + đặt pop-up · M4 hướng dẫn trainer. Deploy tự động lên GitHub Pages khi `main` thay đổi.
 
 ## 8. Việc còn mở cần hỏi Workday / IT ❓
 

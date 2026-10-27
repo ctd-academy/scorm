@@ -15,7 +15,7 @@ for w in 400 600 700; do for s in latin latin-ext vietnamese; do
 done; done
 rm -rf "$TMP"
 
-echo "2/3 File Excel mẫu -> templates/Mau_nhap_lieu_khoa_hoc.xlsx"
+echo "2/3 Template Excel -> templates/Mau_nhap_lieu_khoa_hoc.xlsx (trống) + demo-course/ATLD-DEMO.xlsx (khóa demo)"
 python3 tools/make_template.py
 
 echo "3/3 Video demo -> demo-course/videos/"
@@ -33,4 +33,4 @@ make_video 01_vi-sao-an-toan.mp4     "Bài 1 - Vì sao an toàn là trên hết"
 make_video 02_bao-ho-ca-nhan.mp4     "Bài 2 - Trang bị bảo hộ cá nhân"
 make_video 03_nhan-dien-moi-nguy.mp4 "Bài 3 - Nhận diện mối nguy"
 
-echo "Xong. Thử đóng gói: python3 tools/build_scorm.py templates/Mau_nhap_lieu_khoa_hoc.xlsx demo-course out"
+echo "Xong. Thử đóng gói: python3 tools/build_scorm.py demo-course/ATLD-DEMO.xlsx demo-course out"

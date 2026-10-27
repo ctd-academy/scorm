@@ -3,7 +3,9 @@
 Công cụ của L&OD Coteccons để đóng gói khóa e-learning (video + câu hỏi pop-up + bài thi cuối khóa) thành gói **SCORM 1.2** đưa lên **Workday Learning**.
 
 - `player/` – khung học dùng chung trong mọi gói (đã xong)
-- `builder/` – website để trainer tự đóng gói (đang xây, xem `docs/BUILDER_SPEC.md`)
+- `builder/` – website để trainer tự đóng gói (đang xây theo `docs/BUILDER_SPEC.md`; xong M1: chọn file + kiểm tra lỗi)
+- `templates/Mau_nhap_lieu_khoa_hoc.xlsx` – **template chuẩn, trống**: mỗi khóa học chép ra 1 bản để nhập
+- `demo-course/` – khóa demo (Excel `ATLD-DEMO.xlsx` + 3 video) dùng để thử và test
 
 ## Bắt đầu với Claude Code
 
@@ -16,7 +18,8 @@ Công cụ của L&OD Coteccons để đóng gói khóa e-learning (video + câu
 
 ```bash
 bash tools/setup_assets.sh        # font + Excel mẫu + video demo
-python3 tools/build_scorm.py templates/Mau_nhap_lieu_khoa_hoc.xlsx demo-course out
+python3 tools/build_scorm.py demo-course/ATLD-DEMO.xlsx demo-course out
+(cd builder && npm install && npm run dev)   # chạy Builder trên máy: http://localhost:5173
 ```
 
 Cần: Python 3 (`pip install openpyxl playwright && playwright install chromium`), Node 18+, ffmpeg.
