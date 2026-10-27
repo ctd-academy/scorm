@@ -30,9 +30,9 @@ function colIndex(ref) {
   return n - 1;
 }
 
-function resolveTarget(target) {
+function resolveTarget(target, dir) {
   if (target.startsWith("/")) return target.slice(1);
-  return "xl/" + target.replace(/^\.\//, "");
+  return dir + target.replace(/^\.\//, "");
 }
 
 /**
@@ -46,18 +46,28 @@ export function readXlsx(buffer) {
   } catch {
     throw new Error("File này không phải file Excel .xlsx hợp lệ.");
   }
-  const get = (p) => (files[p] ? strFromU8(files[p]) : null);
-  const wbXml = get("xl/workbook.xml");
+  // Bỏ tiền tố namespace ở tên thẻ (<x:sheet> -> <sheet>): một số cách lưu của Excel/OneDrive ghi kiểu này
+  const get = (p) => (files[p] ? strFromU8(files[p]).replace(/<(\/?)[A-Za-z_][\w.-]*:(?=[A-Za-z_])/g, "<$1") : null);
+  // Vị trí workbook ghi trong _rels/.rels (thường là xl/workbook.xml)
+  let wbPath = "xl/workbook.xml";
+  (get("_rels/.rels") || "").replace(/<Relationship\b([^>]*)\/?>/g, (_, a) => {
+    if (/officeDocument"?$/.test(attr(a, "Type") || "")) wbPath = attr(a, "Target").replace(/^\//, "");
+    return "";
+  });
+  const wbXml = get(wbPath);
   if (!wbXml) throw new Error("File này không phải file Excel .xlsx hợp lệ.");
+  const wbDir = wbPath.includes("/") ? wbPath.slice(0, wbPath.lastIndexOf("/") + 1) : "";
 
   const rels = {};
-  (get("xl/_rels/workbook.xml.rels") || "").replace(/<Relationship\b([^>]*)\/?>/g, (_, a) => {
+  let sharedPath = wbDir + "sharedStrings.xml";
+  (get(wbDir + "_rels/" + wbPath.slice(wbDir.length) + ".rels") || "").replace(/<Relationship\b([^>]*)\/?>/g, (_, a) => {
     rels[attr(a, "Id")] = attr(a, "Target");
+    if (/sharedStrings$/.test(attr(a, "Type") || "")) sharedPath = resolveTarget(attr(a, "Target"), wbDir);
     return "";
   });
 
   const shared = [];
-  (get("xl/sharedStrings.xml") || "").replace(/<si\b[^>]*>([\s\S]*?)<\/si>/g, (_, si) => {
+  (get(sharedPath) || "").replace(/<si\b[^>]*>([\s\S]*?)<\/si>/g, (_, si) => {
     shared.push(textOf(si));
     return "";
   });
@@ -66,7 +76,7 @@ export function readXlsx(buffer) {
   wbXml.replace(/<sheet\b([^>]*)\/?>/g, (_, a) => {
     const name = decode(attr(a, "name"));
     const target = rels[attr(a, "r:id")];
-    const xml = target && get(resolveTarget(target));
+    const xml = target && get(resolveTarget(target, wbDir));
     if (xml) sheets[name] = readSheet(xml, shared);
     return "";
   });

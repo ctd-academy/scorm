@@ -32,18 +32,37 @@ def parse_time(s):
     return h * 3600 + mm * 60 + ss
 
 
-def video_duration(course_dir, fname):
+def find_file(course_dir, fname):
+    """Tìm file theo tên ghi trong Excel (giống findFile trong builder/src/course.js):
+    đúng đường dẫn tính từ thư mục khóa, hoặc chỉ tên file nằm ở bất kỳ thư mục con nào.
+    Trả về (đường dẫn, None), (None, [các đường dẫn trùng tên]) hoặc (None, None)."""
+    want = fname.replace("\\", "/").lstrip("./").lower()
+    found = {}
+    for root, _, names in os.walk(course_dir):
+        for n in names:
+            rel = os.path.relpath(os.path.join(root, n), course_dir).replace(os.sep, "/")
+            found[rel] = os.path.join(root, n)
+    exact = [p for rel, p in found.items() if rel.lower() == want]
+    if exact or "/" in want:
+        return (exact[0] if exact else None), None
+    same = sorted(rel for rel in found if rel.split("/")[-1].lower() == want)
+    if len(same) <= 1:
+        return (found[same[0]] if same else None), None
+    in_videos = [rel for rel in same if rel.lower() == "videos/" + want]
+    return (found[in_videos[0]], None) if in_videos else (None, same)
+
+
+def video_duration(path):
     """Đọc thời lượng video (giây) để hiện trong mục lục và tính thời lượng khóa."""
     import subprocess
-    for p in (os.path.join(course_dir, fname), os.path.join(course_dir, "videos", fname)):
-        if os.path.isfile(p):
-            try:
-                out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                                      "-of", "default=nw=1:nk=1", p], capture_output=True, text=True, timeout=30)
-                return round(float(out.stdout.strip()))
-            except Exception:
-                return 0
-    return 0
+    if not path:
+        return 0
+    try:
+        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                              "-of", "default=nw=1:nk=1", path], capture_output=True, text=True, timeout=30)
+        return round(float(out.stdout.strip()))
+    except Exception:
+        return 0
 
 
 def read_excel(path, course_dir):
@@ -72,16 +91,25 @@ def read_excel(path, course_dir):
         "contact": cell(info.get("Nội dung liên hệ khi hết lượt")) or "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại.",
     }
     logo = cell(info.get("File logo (tùy chọn)"))
+    logo_src = None
+    if logo:
+        logo_src, dup = find_file(course_dir, logo)
+        if not logo_src:
+            errors.append(f"Không tìm thấy file logo '{logo}'" + (f" (trùng tên: {', '.join(dup)})" if dup else ""))
+        logo = logo.replace("\\", "/").split("/")[-1]
 
     # Video: dòng 2 là ví dụ, bỏ qua nếu cột STT ghi "(Ví dụ)"
     videos = []
     for r, row in enumerate(wb["Video"].iter_rows(min_row=2, values_only=True), 2):
         if not row or not cell(row[2]) or cell(row[0]).startswith("(Ví dụ)"):
             continue
-        fname = cell(row[2])
-        if not os.path.isfile(os.path.join(course_dir, fname)) and not os.path.isfile(os.path.join(course_dir, "videos", fname)):
+        fname = cell(row[2]).replace("\\", "/")
+        src, dup = find_file(course_dir, fname)
+        if dup:
+            errors.append(f"Video dòng {r}: có nhiều file tên '{fname}': {', '.join(dup)}. Hãy ghi rõ thư mục")
+        elif not src:
             errors.append(f"Video dòng {r}: không tìm thấy file '{fname}'")
-        videos.append({"title": cell(row[1]) or f"Bài {len(videos)+1}", "file": fname})
+        videos.append({"title": cell(row[1]) or f"Bài {len(videos)+1}", "file": fname, "path": src})
 
     popups, quiz = [], []
     for r, row in enumerate(wb["Câu hỏi"].iter_rows(min_row=2, values_only=True), 2):
@@ -130,11 +158,12 @@ def read_excel(path, course_dir):
         "logo": ("assets/" + logo) if logo else None,
         "settings": settings,
         "videos": [{"title": v["title"], "src": "videos/" + v["file"],
-                    "duration": video_duration(course_dir, v["file"])} for v in videos],
+                    "duration": video_duration(v["path"])} for v in videos],
         "popups": popups,
         "quiz": quiz,
     }
-    return course, logo, errors
+    sources = {"videos": [v["path"] for v in videos], "logo": logo_src}
+    return course, logo, errors, sources
 
 
 def manifest(course, files):
@@ -166,7 +195,7 @@ def manifest(course, files):
 
 
 def build(xlsx, course_dir, out_dir):
-    course, logo, errors = read_excel(xlsx, course_dir)
+    course, logo, errors, sources = read_excel(xlsx, course_dir)
     if errors:
         print("KHÔNG XUẤT ĐƯỢC. Hãy sửa các lỗi sau trong file Excel:")
         for e in errors:
@@ -182,14 +211,10 @@ def build(xlsx, course_dir, out_dir):
             entries.append((os.path.relpath(full, PLAYER).replace(os.sep, "/"), full))
     js = "window.COURSE = " + json.dumps(course, ensure_ascii=False, indent=1) + ";\n"
     entries.append(("course.js", js.encode("utf-8")))
-    for v in course["videos"]:
-        fname = v["src"][len("videos/"):]
-        src = os.path.join(course_dir, fname)
-        if not os.path.isfile(src):
-            src = os.path.join(course_dir, "videos", fname)
+    for v, src in zip(course["videos"], sources["videos"]):
         entries.append((v["src"], src))
     if logo:
-        entries.append(("assets/" + logo, os.path.join(course_dir, logo)))
+        entries.append(("assets/" + logo, sources["logo"]))
     files = [e[0] for e in entries]
     entries.append(("imsmanifest.xml", manifest(course, files).encode("utf-8")))
 

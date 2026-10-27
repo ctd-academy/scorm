@@ -85,6 +85,8 @@ Cần: Python 3 + `openpyxl` + `playwright`, Node 18+, `ffmpeg`/`ffprobe`.
 - Excel có thể tự đổi "01:30" thành giờ 01:30. `build_scorm.py` hiểu lại thành phút:giây; Builder làm giống vậy (`parseTime` trong `builder/src/course.js`).
 - **Không dùng SheetJS:** bản mới chỉ có ở cdn.sheetjs.com (không cài được trong môi trường của Claude), bản trên npm (0.18.5) cũ và có lỗ hổng. Builder tự đọc .xlsx trong `builder/src/xlsx.js`.
 - Chrome không đọc lại được file Excel đã sửa sau khi chọn: người dùng phải bấm chọn lại file.
+- Trainer để video trong các thư mục chủ đề (`01. Tong quan/…`). Builder và `build_scorm.py` tìm video theo tên ở mọi thư mục con; trùng tên thì bắt ghi rõ thư mục.
+- Tên sheet so khớp không phân biệt hoa thường/khoảng trắng; `xlsx.js` bỏ tiền tố namespace của thẻ (`<x:sheet>`) và tìm workbook qua `_rels/.rels`.
 - Gói zip: video và font lưu **STORED** (không nén lại), file text nén DEFLATE.
 - Khóa dài 120 phút ≈ 1–1,5 GB. Không được giữ cả zip trong RAM: phải **ghi streaming xuống ổ cứng** (`showSaveFilePicker`, chỉ Chrome/Edge). Trình duyệt khác tạo zip trong bộ nhớ, chỉ cho khóa < 500 MB.
 - **Không dùng zip streaming của fflate:** nó luôn ghi "data descriptor", kể cả với file STORED, mà `java.util.zip.ZipInputStream` (LMS chạy Java) không đọc được kiểu này. `src/zip.js` ghi header trước rồi quay lại điền CRC.

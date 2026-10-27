@@ -6,25 +6,29 @@ import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readXlsx } from "../src/xlsx.js";
+import { unzipSync, zipSync, strFromU8, strToU8 } from "fflate";
 import { readCourse, parseTime } from "../src/course.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DEMO = join(ROOT, "demo-course");
 const XLSX = join(DEMO, "ATLD-DEMO.xlsx");
 
-function folderOf(dir) {
-  const list = (d) => readdirSync(d).filter((n) => statSync(join(d, n)).isFile()).map((name) => ({ name, size: statSync(join(d, name)).size }));
-  let videos = [];
-  try { videos = list(join(dir, "videos")); } catch {}
-  return { root: list(dir), videos };
+// Mọi file trong thư mục khóa (kể cả thư mục con), giống folderEntries() trong src/main.js
+function folderOf(dir, prefix = "") {
+  return readdirSync(join(dir, prefix), { withFileTypes: true }).flatMap((d) => {
+    const path = prefix + d.name;
+    if (d.isDirectory()) return folderOf(dir, path + "/");
+    const size = statSync(join(dir, path)).size;
+    return [{ path, name: d.name, size, file: { name: d.name, size } }];
+  });
 }
 
 // Thời lượng thật đọc bằng ffprobe, giống build_scorm.py
 function ffDurations(folder) {
   const m = new Map();
-  for (const f of folder.videos) {
-    const out = execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", join(DEMO, "videos", f.name)]);
-    m.set(f.name, parseFloat(out.toString()));
+  for (const f of folder.filter((x) => x.name.endsWith(".mp4"))) {
+    const out = execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", join(DEMO, f.path)]);
+    m.set(f.path, parseFloat(out.toString()));
   }
   return m;
 }
@@ -39,7 +43,7 @@ function reference() {
 import json, sys
 sys.path.insert(0, ${JSON.stringify(join(ROOT, "tools"))})
 from build_scorm import read_excel
-course, logo, errors = read_excel(${JSON.stringify(XLSX)}, ${JSON.stringify(DEMO)})
+course, logo, errors, sources = read_excel(${JSON.stringify(XLSX)}, ${JSON.stringify(DEMO)})
 print(json.dumps(course, ensure_ascii=False))`;
   return JSON.parse(execFileSync("python3", ["-c", py]).toString());
 }
@@ -85,7 +89,7 @@ test("cố tình làm sai 5 loại lỗi: báo đúng sheet và dòng", () => {
   const { errors } = readCourse(sheets, folder, ffDurations(folder));
   const expect = [
     "Sheet Thông tin khóa, dòng 2: Mã khóa 'ATLD DEMO có dấu'",
-    "Sheet Video, dòng 4: không tìm thấy video '02_bao-ho-ca-nhan.mp' trong thư mục bạn chọn. Có phải ý bạn là '02_bao-ho-ca-nhan.mp4'?",
+    "Sheet Video, dòng 4: không tìm thấy video '02_bao-ho-ca-nhan.mp' trong thư mục bạn chọn. Có phải ý bạn là '02_bao-ho-ca-nhan.mp4' (trong 'videos')?",
     "Sheet Câu hỏi, dòng 4: mốc thời gian '1.30'",
     "Sheet Câu hỏi, dòng 5: 'Video số' phải từ 1 đến 3",
     "Sheet Câu hỏi, dòng 7: đáp án đúng 'E' không hợp lệ",
@@ -114,10 +118,55 @@ test("pop-up vượt thời lượng video, số câu thi > ngân hàng, pop-up 
 
 test("template chuẩn trống: báo thiếu mã khóa, tên khóa, video", () => {
   const sheets = readXlsx(readFileSync(join(ROOT, "templates", "Mau_nhap_lieu_khoa_hoc.xlsx")));
-  const { errors } = readCourse(sheets, { root: [], videos: [] });
+  const { errors } = readCourse(sheets, []);
   assert.deepEqual(errors, [
     "Sheet Thông tin khóa, dòng 2: chưa điền Mã khóa",
     "Sheet Thông tin khóa, dòng 3: chưa điền Tên khóa",
     "Sheet Video: chưa có video nào. Nhập dữ liệu từ dòng 3",
   ]);
+});
+
+test("video nằm trong thư mục con bất kỳ (như thư mục khóa Hội nhập)", () => {
+  const { sheets } = demo();
+  // mỗi video một thư mục chủ đề, Excel chỉ ghi tên file
+  const folder = folderOf(DEMO).map((f) => f.path.startsWith("videos/")
+    ? { ...f, path: { "01_vi-sao-an-toan.mp4": "01. Tong quan/", "02_bao-ho-ca-nhan.mp4": "02. Chinh sach/", "03_nhan-dien-moi-nguy.mp4": "03. ATLD/" }[f.name] + f.name }
+    : f);
+  const { course, errors, files } = readCourse(sheets, folder);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(course.videos.map((v) => v.src), ["videos/01_vi-sao-an-toan.mp4", "videos/02_bao-ho-ca-nhan.mp4", "videos/03_nhan-dien-moi-nguy.mp4"]);
+  assert.deepEqual(files.map((f) => f.path), ["01. Tong quan/01_vi-sao-an-toan.mp4", "02. Chinh sach/02_bao-ho-ca-nhan.mp4", "03. ATLD/03_nhan-dien-moi-nguy.mp4"]);
+});
+
+test("2 video trùng tên ở 2 thư mục: báo lỗi, ghi rõ thư mục thì hết lỗi", () => {
+  const { sheets } = demo();
+  const v = { name: "bai.mp4", size: 1, file: { name: "bai.mp4", size: 1 } };
+  const folder = [{ ...v, path: "01. A/bai.mp4" }, { ...v, path: "02. B/bai.mp4" }, ...folderOf(DEMO).filter((f) => !f.name.startsWith("01_"))];
+  sheets["Video"][3][3] = "bai.mp4";
+  const r1 = readCourse(sheets, folder);
+  assert.ok(r1.errors[0].startsWith("Sheet Video, dòng 3: có 2 file tên 'bai.mp4' ở các thư mục khác nhau ('01. A/bai.mp4', '02. B/bai.mp4')"), r1.errors.join("\n"));
+  sheets["Video"][3][3] = "02. B\\bai.mp4"; // gõ kiểu Windows
+  const r2 = readCourse(sheets, folder);
+  assert.deepEqual(r2.errors, []);
+  assert.equal(r2.files[0].path, "02. B/bai.mp4");
+  assert.equal(r2.course.videos[0].src, "videos/02. B/bai.mp4");
+});
+
+test("thiếu sheet: liệt kê các sheet đang có; tên sheet khác hoa thường/khoảng trắng vẫn nhận", () => {
+  const { sheets, folder } = demo();
+  const renamed = { "thông tin KHÓA ": sheets["Thông tin khóa"], Video: sheets["Video"], "Câu hỏi": sheets["Câu hỏi"] };
+  assert.deepEqual(readCourse(renamed, folder).errors, []);
+  const { errors } = readCourse({ Sheet1: [], "Câu hỏi": sheets["Câu hỏi"] }, folder);
+  assert.equal(errors[0], "File Excel thiếu sheet 'Thông tin khóa', 'Video'. File đang có các sheet: 'Sheet1', 'Câu hỏi'. Hãy tải file Excel mẫu ở bước 1 và chép nội dung sang, giữ nguyên tên sheet.");
+});
+
+test("đọc được file Excel ghi thẻ có tiền tố namespace (<x:sheet>, <x:row>...)", () => {
+  const files = unzipSync(new Uint8Array(readFileSync(XLSX)));
+  for (const [p, data] of Object.entries(files)) {
+    if (!/\.xml$/.test(p) || p.includes("_rels")) continue;
+    files[p] = strToU8(strFromU8(data).replace(/<(\/?)(workbook|sheets|sheet|worksheet|sheetData|row|c|v|t|si|sst|is)\b/g, "<$1x:$2"));
+  }
+  const prefixed = readXlsx(zipSync(files));
+  assert.deepEqual(Object.keys(prefixed), Object.keys(readXlsx(readFileSync(XLSX))));
+  assert.deepEqual(prefixed["Câu hỏi"], readXlsx(readFileSync(XLSX))["Câu hỏi"]);
 });

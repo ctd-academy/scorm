@@ -16,18 +16,17 @@ const DEMO = join(ROOT, "demo-course");
 const TMP = mkdtempSync(join(tmpdir(), "scorm-"));
 after(() => rmSync(TMP, { recursive: true, force: true }));
 
-async function folderOf(dir) {
-  const list = async (d) => {
-    const out = [];
-    for (const name of readdirSync(d)) {
-      const p = join(d, name);
-      if (!statSync(p).isFile()) continue;
-      const blob = await openAsBlob(p);
-      out.push(Object.assign(blob, { name }));
+async function folderOf(dir, prefix = "") {
+  const out = [];
+  for (const d of readdirSync(join(dir, prefix), { withFileTypes: true })) {
+    const path = prefix + d.name;
+    if (d.isDirectory()) out.push(...(await folderOf(dir, path + "/")));
+    else {
+      const file = Object.assign(await openAsBlob(join(dir, path)), { name: d.name });
+      out.push({ path, name: d.name, size: file.size, file });
     }
-    return out;
-  };
-  return { root: await list(dir), videos: await list(join(dir, "videos")) };
+  }
+  return out;
 }
 
 function playerFiles() {
@@ -40,9 +39,9 @@ function playerFiles() {
 
 function durations(folder) {
   const m = new Map();
-  for (const f of folder.videos) {
-    const out = execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", join(DEMO, "videos", f.name)]);
-    m.set(f.name, parseFloat(out.toString()));
+  for (const f of folder.filter((x) => x.name.endsWith(".mp4"))) {
+    const out = execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", join(DEMO, f.path)]);
+    m.set(f.path, parseFloat(out.toString()));
   }
   return m;
 }
