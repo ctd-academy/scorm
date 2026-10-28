@@ -5,7 +5,8 @@ Website Builder: trainer chọn thư mục khóa (video + Excel), Builder tự t
 ```bash
 npm install
 npm run dev      # chạy trên máy: http://localhost:5173
-npm test         # test logic đọc Excel + kiểm tra lỗi (cần python3 + openpyxl, ffprobe)
+npm test         # test logic đọc Excel, kiểm tra lỗi, đóng gói (cần python3, ffprobe)
+node scripts/build-scorm.mjs <file_excel> <thư_mục_khóa> <thư_mục_xuất>   # đóng gói bằng dòng lệnh, cùng code với web
 npm run build    # tạo website tĩnh trong dist/
 ```
 

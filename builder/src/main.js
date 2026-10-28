@@ -4,9 +4,9 @@ import { readCourse, formatDuration } from "./course.js";
 import { writePackage, memorySink, diskSink } from "./package.js";
 import { renderPopupStep } from "./popups.js";
 import { renderPreviewStep, closePreview } from "./preview.js";
+import { VIDEO_EXT, ignored, esc } from "./util.js";
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const mb = (n) => (n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2) + " GB" : Math.max(0.1, n / 1024 ** 2).toFixed(1) + " MB");
 
 // source: { kind: "handle", dir } (Chrome/Edge: đọc lại thư mục mỗi lần Kiểm tra lại)
@@ -14,7 +14,6 @@ const mb = (n) => (n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2) + " GB" : Math.ma
 // excelOverride: file Excel chọn riêng ({ handle } hoặc { file }), null = tự tìm trong thư mục
 const state = { source: null, folderName: "", excelChoice: "", excelOverride: null, logo: null, result: null, exporting: false };
 const MEMORY_LIMIT = 500 * 1024 ** 2; // trình duyệt không ghi thẳng xuống ổ cứng được thì chỉ xuất khóa nhỏ
-const VIDEO_EXT = /\.(mp4|m4v|mov|webm|avi|mkv|wmv|flv|mpe?g)$/i;
 const durationCache = new Map(); // khóa file -> giây (null nếu không mở được)
 let runId = 0;
 
@@ -33,18 +32,16 @@ function dropUrls() {
   blobUrls.clear();
 }
 
-const skip = (name) => name.startsWith("~$") || name.startsWith(".");
-
 // Mọi file trong thư mục khóa, kể cả thư mục con; path tính từ thư mục khóa
 function folderEntries(files) {
   return files
     .map((f) => ({ path: (f.webkitRelativePath || f.name).split("/").slice(1).join("/") || f.name, name: f.name, size: f.size, file: f }))
-    .filter((e) => !e.path.split("/").some(skip));
+    .filter((e) => !e.path.split("/").some(ignored));
 }
 
 async function walk(dir, prefix = "", out = []) {
   for await (const h of dir.values()) {
-    if (skip(h.name)) continue;
+    if (ignored(h.name)) continue;
     if (h.kind === "directory") await walk(h, prefix + h.name + "/", out);
     else {
       const file = await h.getFile();

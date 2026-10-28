@@ -1,7 +1,8 @@
-// Test tương đương (BUILDER_SPEC mục 4): gói của Builder so với gói của build_scorm.py cho khóa demo.
+// Test gói SCORM: gói của Builder khớp gói mẫu (golden/ATLD-DEMO.json), lệnh đóng gói ra cùng gói với Builder web,
+// zip đọc được bằng Python zipfile (không dùng "data descriptor", CRC đúng).
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync, openAsBlob, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
@@ -10,46 +11,21 @@ import { readXlsx } from "../src/xlsx.js";
 import { readCourse } from "../src/course.js";
 import { writePackage, memorySink } from "../src/package.js";
 import { crc32 } from "../src/zip.js";
+import { readFolder, ffprobe, playerFiles } from "../scripts/build-scorm.mjs";
+import { listPlayerFiles } from "../scripts/player-files.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(HERE, "..", "..");
 const DEMO = join(ROOT, "demo-course");
+const GOLDEN = JSON.parse(readFileSync(join(HERE, "golden", "ATLD-DEMO.json"), "utf8"));
 const TMP = mkdtempSync(join(tmpdir(), "scorm-"));
 after(() => rmSync(TMP, { recursive: true, force: true }));
 
-async function folderOf(dir, prefix = "") {
-  const out = [];
-  for (const d of readdirSync(join(dir, prefix), { withFileTypes: true })) {
-    const path = prefix + d.name;
-    if (d.isDirectory()) out.push(...(await folderOf(dir, path + "/")));
-    else {
-      const file = Object.assign(await openAsBlob(join(dir, path)), { name: d.name });
-      out.push({ path, name: d.name, size: file.size, file });
-    }
-  }
-  return out;
-}
-
-function playerFiles() {
-  const P = join(ROOT, "player");
-  const walk = (dir, prefix = "") =>
-    readdirSync(dir, { withFileTypes: true }).flatMap((d) =>
-      d.isDirectory() ? walk(join(dir, d.name), prefix + d.name + "/") : d.name === "course.js" ? [] : [prefix + d.name]);
-  return walk(P).map((path) => ({ path, data: new Uint8Array(readFileSync(join(P, path))) }));
-}
-
-function durations(folder) {
-  const m = new Map();
-  for (const f of folder.filter((x) => x.name.endsWith(".mp4"))) {
-    const out = execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", join(DEMO, f.path)]);
-    m.set(f.path, parseFloat(out.toString()));
-  }
-  return m;
-}
-
 async function builderZip() {
-  const folder = await folderOf(DEMO);
+  const folder = await readFolder(DEMO);
   const sheets = readXlsx(readFileSync(join(DEMO, "ATLD-DEMO.xlsx")));
-  const { course, files, errors } = readCourse(sheets, folder, durations(folder));
+  const durations = new Map(folder.filter((f) => f.name.endsWith(".mp4")).map((f) => [f.path, ffprobe(join(DEMO, f.path))]));
+  const { course, files, errors } = readCourse(sheets, folder, durations);
   assert.deepEqual(errors, []);
   const sink = memorySink();
   await writePackage({ course, files, playerFiles: playerFiles(), sink });
@@ -70,7 +46,7 @@ def info(path):
     entries = {i.filename: {"stored": i.compress_type == zipfile.ZIP_STORED, "descriptor": bool(i.flag_bits & 8)} for i in z.infolist()}
     return {"names": sorted(z.namelist()), "course": course, "hrefs": hrefs, "entries": entries,
             "scorm": m.getElementsByTagName("schemaversion")[0].firstChild.data}
-print(json.dumps({"builder": info(sys.argv[1]), "python": info(sys.argv[2])}, ensure_ascii=False))
+print(json.dumps([info(p) for p in sys.argv[1:]], ensure_ascii=False))
 `;
 
 test("crc32 đúng chuẩn", () => {
@@ -78,22 +54,24 @@ test("crc32 đúng chuẩn", () => {
   assert.equal(crc32(new Uint8Array(0)), 0);
 });
 
-test("gói Builder tương đương gói build_scorm.py cho khóa demo", async () => {
-  const mine = await builderZip();
-  execFileSync("python3", [join(ROOT, "tools", "build_scorm.py"), join(DEMO, "ATLD-DEMO.xlsx"), DEMO, TMP]);
-  const ref = join(TMP, "SCORM_ATLD-DEMO.zip");
-  const { builder: b, python: p } = JSON.parse(execFileSync("python3", ["-c", COMPARE, mine, ref]).toString());
+const zipInfo = (...paths) => JSON.parse(execFileSync("python3", ["-c", COMPARE, ...paths]).toString());
 
-  assert.deepEqual(b.names, p.names, "cùng danh sách file");
-  assert.deepEqual(b.hrefs, p.hrefs, "manifest liệt kê cùng file");
+test("gói Builder khớp gói mẫu của khóa demo", async () => {
+  const [b] = zipInfo(await builderZip());
+  assert.deepEqual(b.names, [...listPlayerFiles(), ...GOLDEN.files].sort(), "đủ file Player + video, tài liệu, course.js, manifest");
+  assert.deepEqual(b.hrefs, b.names.filter((n) => n !== "imsmanifest.xml"), "manifest liệt kê mọi file");
   assert.equal(b.scorm, "1.2");
-  p.course.videos.forEach((v, i) => assert.ok(Math.abs(v.duration - b.course.videos[i].duration) <= 1));
-  const strip = (c) => ({ ...c, videos: c.videos.map(({ duration, ...v }) => v) });
-  assert.deepEqual(strip(b.course), strip(p.course), "course.js cùng nội dung");
-  for (const [name, e] of Object.entries(b.entries)) {
-    assert.equal(e.stored, p.entries[name].stored, `${name}: cùng kiểu nén`);
-    assert.equal(e.descriptor, false, `${name}: không dùng data descriptor`);
-  }
+  assert.deepEqual(b.course, GOLDEN.course, "course.js cùng nội dung");
+  const own = new Set(GOLDEN.files);
+  assert.deepEqual(Object.keys(b.entries).filter((n) => own.has(n) && b.entries[n].stored).sort(), GOLDEN.stored, "video, PDF lưu không nén");
+  for (const [name, e] of Object.entries(b.entries)) assert.equal(e.descriptor, false, `${name}: không dùng data descriptor`);
+});
+
+test("lệnh đóng gói (scripts/build-scorm.mjs) ra cùng gói với Builder", async () => {
+  const mine = await builderZip();
+  execFileSync("node", [join(HERE, "..", "scripts", "build-scorm.mjs"), join(DEMO, "ATLD-DEMO.xlsx"), DEMO, TMP]);
+  const [b, c] = zipInfo(mine, join(TMP, "SCORM_ATLD-DEMO.zip"));
+  assert.deepEqual(c, b);
 });
 
 test("khóa không có tài liệu: không đưa trình xem PDF (pdfjs/) vào gói", async () => {

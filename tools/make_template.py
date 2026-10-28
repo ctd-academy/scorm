@@ -8,7 +8,7 @@ Cách dùng:  python3 tools/make_template.py
 LƯU Ý: Alex dùng Excel bản cũ, công thức trong file mở bằng tay có thể cần dấu ';'.
 openpyxl luôn ghi công thức chuẩn dấu ',' và Excel tự hiển thị theo locale máy.
 """
-import os, sys
+import json, os, sys
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
@@ -16,6 +16,9 @@ from openpyxl.comments import Comment
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
+# Nội dung mặc định dùng chung với Builder (sửa ở một chỗ)
+with open(os.path.join(ROOT, "builder", "src", "defaults.json"), encoding="utf-8") as f:
+    DEFAULTS = json.load(f)
 
 NAVY="16315E"; TEAL="5FD1C1"; FILL="FFF7D6"
 F="Arial"
@@ -93,7 +96,7 @@ def make(demo, OUT):
   ("Số câu mỗi lần thi",5 if demo else 0,"Rút ngẫu nhiên từ ngân hàng câu hỏi. 0 = dùng tất cả"),
   ("Thời gian làm bài (phút)",10 if demo else 0,"0 = không giới hạn"),
   ("Hiện đáp án sau khi nộp","Có" if demo else "Không","Có / Không"),
-  ("Nội dung liên hệ khi hết lượt","Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại.","Học viên thấy nội dung này khi hết lượt"),
+  ("Nội dung liên hệ khi hết lượt",DEFAULTS["contact"],"Học viên thấy nội dung này khi hết lượt"),
   ("File logo (tùy chọn)","","Tên file logo đặt trong thư mục khóa. Để trống = dùng logo Coteccons trắng có sẵn"),
   ]
   for i,(a,b,c) in enumerate(rows,2):

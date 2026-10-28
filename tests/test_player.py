@@ -1,9 +1,11 @@
 """Test tự động cho Player v1 (Playwright + Chromium): luật học, bài thi, điện thoại, tài liệu PDF.
 
+Cách nhanh nhất: bash tests/run_all.sh (tự làm các bước dưới và chạy mọi test).
+
 Chuẩn bị (từ gốc repo):
-  python3 tools/build_scorm.py demo-course/ATLD-DEMO.xlsx demo-course out
+  node builder/scripts/build-scorm.mjs demo-course/ATLD-DEMO.xlsx demo-course out
   rm -rf out/test && mkdir -p out/test/course && cp tests/lms.html out/test/
-  (cd out/test/course && unzip -q ../../SCORM_ATLD-DEMO.zip)
+  python3 -m zipfile -e out/SCORM_ATLD-DEMO.zip out/test/course
   npx http-server out/test -p 8765 -s -c-1 &      # BẮT BUỘC server hỗ trợ HTTP Range
   python3 tests/test_player.py
 

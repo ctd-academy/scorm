@@ -18,24 +18,14 @@ Không cần cài đặt hay chạy lệnh gì. Video và đề thi không rời
 
 ## Dành cho người phát triển
 
-- `player/` – khung học dùng chung trong mọi gói (đã xong)
-- `builder/` – website để trainer tự đóng gói (đang xây theo `docs/BUILDER_SPEC.md`; xong M1–M3: kiểm tra lỗi, đặt pop-up, xem thử, xuất gói SCORM)
-- `templates/Mau_nhap_lieu_khoa_hoc.xlsx` – **template chuẩn, trống**: mỗi khóa học chép ra 1 bản để nhập
-- `demo-course/` – khóa demo (Excel `ATLD-DEMO.xlsx` + 3 video) dùng để thử và test
-
-## Bắt đầu với Claude Code
-
-1. Giải nén thư mục này, mở terminal tại đây, chạy `claude`.
-2. Dán câu sau:
-
-   > Đọc CLAUDE.md, docs/BUILDER_SPEC.md và docs/HANDOFF.md. Chạy tools/setup_assets.sh, đóng gói khóa demo và chạy test Player để chắc môi trường ổn. Sau đó đề xuất kế hoạch cho mốc M1 của Builder rồi chờ mình duyệt.
-
-## Lệnh nhanh
+Đọc **[`docs/DEV.md`](docs/DEV.md)**: cài đặt máy, cấu trúc code, cách chạy test, các việc hay gặp (đổi câu liên hệ, thêm cột Excel, nâng PDF.js…) và các bẫy đã biết. Bối cảnh dự án: [`docs/HANDOFF.md`](docs/HANDOFF.md).
 
 ```bash
-bash tools/setup_assets.sh        # font + Excel mẫu + video demo
-python3 tools/build_scorm.py demo-course/ATLD-DEMO.xlsx demo-course out
 (cd builder && npm install && npm run dev)   # chạy Builder trên máy: http://localhost:5173
+bash tests/run_all.sh                        # chạy toàn bộ test
+node builder/scripts/build-scorm.mjs demo-course/ATLD-DEMO.xlsx demo-course out   # đóng gói bằng dòng lệnh
 ```
 
-Cần: Python 3 (`pip install openpyxl playwright && playwright install chromium`), Node 18+, ffmpeg.
+Cần: Node 20+, Python 3 (`pip install -r tests/requirements.txt`), ffmpeg.
+
+Dùng Claude Code: mở terminal ở thư mục repo, chạy `claude`. Claude tự đọc `CLAUDE.md`.

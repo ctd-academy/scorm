@@ -1,5 +1,7 @@
 """Test giao diện Builder (Playwright + Chromium): chọn thư mục -> đặt pop-up -> kiểm tra -> xem thử -> xuất gói.
 
+Cách nhanh nhất: bash tests/run_all.sh (tự làm các bước dưới và chạy mọi test).
+
 Chuẩn bị (từ gốc repo):
   (cd builder && npm install && npm run build)
   npx http-server builder/dist -p 8766 -s -c-1 &
@@ -71,13 +73,14 @@ def zip_info(path):
             "descriptor": [i.filename for i in z.infolist() if i.flag_bits & 8],
             "stored": sorted(i.filename for i in z.infolist() if i.compress_type == zipfile.ZIP_STORED)}
 
-def same_as_python(path, course_dir, label):
+def same_as_cli(path, course_dir, label):
+    """So gói Builder web xuất ra với gói của lệnh đóng gói (builder/scripts/build-scorm.mjs) cho cùng thư mục."""
     ref_dir = tempfile.mkdtemp()
-    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "build_scorm.py"), os.path.join(DEMO, "ATLD-DEMO.xlsx"), course_dir, ref_dir], check=True, capture_output=True)
+    subprocess.run(["node", os.path.join(ROOT, "builder", "scripts", "build-scorm.mjs"), os.path.join(course_dir, "ATLD-DEMO.xlsx"), course_dir, ref_dir], check=True, capture_output=True)
     a, r = zip_info(path), zip_info(os.path.join(ref_dir, "SCORM_ATLD-DEMO.zip"))
     shutil.rmtree(ref_dir)
     check(f"{label}: zip hợp lệ, CRC đúng", a["bad"] is None, a["bad"])
-    check(f"{label}: cùng danh sách file với build_scorm.py", a["names"] == r["names"])
+    check(f"{label}: cùng danh sách file với lệnh đóng gói", a["names"] == r["names"])
     check(f"{label}: cùng kiểu nén, không dùng data descriptor", a["stored"] == r["stored"] and not a["descriptor"], (a["stored"], a["descriptor"]))
     dur = all(abs(x["duration"] - y["duration"]) <= 1 for x, y in zip(a["course"]["videos"], r["course"]["videos"]))
     strip = lambda c: {**c, "videos": [{k: v for k, v in x.items() if k != "duration"} for x in c["videos"]]}
@@ -153,7 +156,7 @@ with sync_playwright() as p:
         page.evaluate(PULL_SAVED)
     zip_path = SHOTS + "SCORM_ATLD-DEMO.zip"
     dl.value.save_as(zip_path)
-    same_as_python(zip_path, DEMO, "Gói ghi xuống ổ cứng")
+    same_as_cli(zip_path, DEMO, "Gói ghi xuống ổ cứng")
 
     # ---- Bước 2: đặt pop-up bằng nút bấm
     page.context.grant_permissions(["clipboard-read", "clipboard-write"])
@@ -303,7 +306,7 @@ with sync_playwright() as p:
     fallback = os.path.join(tmp, "fallback.zip")
     dl.value.save_as(fallback)
     check("Không có hộp thoại lưu: tải về được", dl.value.suggested_filename == "SCORM_ATLD-DEMO.zip", dl.value.suggested_filename)
-    same_as_python(fallback, DEMO, "Gói tải về từ bộ nhớ")
+    same_as_cli(fallback, DEMO, "Gói tải về từ bộ nhớ")
     page2.close()
 
     # ---- Thư mục giống khóa Hội nhập: mỗi video một thư mục chủ đề, Excel nằm ngay trong thư mục
@@ -326,7 +329,7 @@ with sync_playwright() as p:
         page4.evaluate(PULL_SAVED)
     nested_zip = os.path.join(tmp, "nested.zip")
     dl.value.save_as(nested_zip)
-    same_as_python(nested_zip, nested, "Video trong thư mục con")
+    same_as_cli(nested_zip, nested, "Video trong thư mục con")
     page4.close()
 
     # ---- Khóa giả lập ~1,5 GB: ghi streaming, RAM không tăng theo dung lượng
@@ -358,7 +361,7 @@ with sync_playwright() as p:
             page3.evaluate(PULL_SAVED)
         big_zip = os.path.join(tmp, "big.zip")
         dl.value.save_as(big_zip)
-        same_as_python(big_zip, big_dir, "Khóa 1,5 GB")
+        same_as_cli(big_zip, big_dir, "Khóa 1,5 GB")
         ctx3.close()
     b.close()
 

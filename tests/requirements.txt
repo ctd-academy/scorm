@@ -1,0 +1,4 @@
+# Thư viện Python cho tools/make_template.py và test giao diện (tests/*.py)
+# Cài:  pip install -r tests/requirements.txt && python3 -m playwright install chromium
+openpyxl==3.1.5
+playwright==1.64.1

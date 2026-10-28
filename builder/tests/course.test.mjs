@@ -2,12 +2,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readXlsx } from "../src/xlsx.js";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "fflate";
 import { readCourse, parseTime } from "../src/course.js";
+import { ffprobe } from "../scripts/build-scorm.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DEMO = join(ROOT, "demo-course");
@@ -23,30 +23,17 @@ function folderOf(dir, prefix = "") {
   });
 }
 
-// Thời lượng thật đọc bằng ffprobe, giống build_scorm.py
+// Thời lượng thật đọc bằng ffprobe, giống lệnh đóng gói scripts/build-scorm.mjs
 function ffDurations(folder) {
-  const m = new Map();
-  for (const f of folder.filter((x) => x.name.endsWith(".mp4"))) {
-    const out = execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", join(DEMO, f.path)]);
-    m.set(f.path, parseFloat(out.toString()));
-  }
-  return m;
+  return new Map(folder.filter((x) => x.name.endsWith(".mp4")).map((f) => [f.path, ffprobe(join(DEMO, f.path))]));
 }
 
 function demo() {
   return { sheets: readXlsx(readFileSync(XLSX)), folder: folderOf(DEMO) };
 }
 
-// Dữ liệu course.js mà build_scorm.py (bản tham chiếu) đọc ra
-function reference() {
-  const py = `
-import json, sys
-sys.path.insert(0, ${JSON.stringify(join(ROOT, "tools"))})
-from build_scorm import read_excel
-course, logo, errors, sources = read_excel(${JSON.stringify(XLSX)}, ${JSON.stringify(DEMO)})
-print(json.dumps(course, ensure_ascii=False))`;
-  return JSON.parse(execFileSync("python3", ["-c", py]).toString());
-}
+// Dữ liệu khóa demo đã kiểm tra (xem golden/ATLD-DEMO.json)
+const GOLDEN = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "golden", "ATLD-DEMO.json"), "utf8"));
 
 test("đọc thời gian mm:ss và thời gian Excel tự đổi", () => {
   assert.equal(parseTime("01:30"), 90);
@@ -68,13 +55,10 @@ test("khóa demo: tóm tắt đúng, không lỗi", () => {
   assert.equal(course.settings.questionsPerAttempt, 5);
 });
 
-test("khóa demo: dữ liệu khóa giống hệt build_scorm.py (thời lượng lệch tối đa 1 giây)", () => {
+test("khóa demo: dữ liệu khóa giống hệt gói mẫu golden/ATLD-DEMO.json", () => {
   const { sheets, folder } = demo();
   const { course } = readCourse(sheets, folder, ffDurations(folder));
-  const ref = reference();
-  ref.videos.forEach((v, i) => assert.ok(Math.abs(v.duration - course.videos[i].duration) <= 1));
-  const strip = (c) => ({ ...c, videos: c.videos.map(({ duration, ...v }) => v) });
-  assert.deepEqual(strip(course), strip(ref));
+  assert.deepEqual(course, GOLDEN.course);
 });
 
 test("cố tình làm sai 5 loại lỗi: báo đúng sheet và dòng", () => {

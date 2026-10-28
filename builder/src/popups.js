@@ -2,8 +2,7 @@
 // Dùng được cả khi chưa có Excel: khi đó xếp video theo thứ tự thư mục và cho copy danh sách video.
 // Builder không sửa file Excel của người dùng.
 
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-export const mmss = (sec) => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
+import { esc, mmss } from "./util.js";
 
 // Mốc đã đặt theo thư mục khóa: { path (đường dẫn video trong thư mục), time }.
 // Lưu theo file video chứ không theo số thứ tự, để sửa Excel (đổi thứ tự bài) không làm lệch mốc.

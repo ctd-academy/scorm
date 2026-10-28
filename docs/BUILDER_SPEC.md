@@ -1,7 +1,9 @@
 # Spec – Coteccons SCORM Builder (web) v1
 
-> Cập nhật: 27/10/2026 · Chủ dự án: Alex (L&OD Team Lead)
-> Đọc kèm `CLAUDE.md` và `docs/HANDOFF.md`.
+> Cập nhật: 28/10/2026 · Chủ dự án: Alex (L&OD Team Lead)
+> Đọc kèm `docs/DEV.md` và `docs/HANDOFF.md`.
+>
+> 28/10/2026: đã bỏ `tools/build_scorm.py` (bản Python). Builder và lệnh đóng gói `builder/scripts/build-scorm.mjs` dùng chung một code; gói của khóa demo được so với gói mẫu `builder/tests/golden/ATLD-DEMO.json` (lấy từ bản Python trước khi bỏ).
 
 ## 1. Mục tiêu
 
@@ -18,7 +20,7 @@ Website tĩnh (HTML/CSS/JS) ── host trên GitHub Pages
 Trình duyệt của trainer (Chrome/Edge)
  ├─ Đọc Excel           builder/src/xlsx.js (fflate + đọc XML)
  ├─ Đọc thư mục video   <input webkitdirectory> hoặc showDirectoryPicker()
- ├─ Kiểm tra lỗi        logic giống tools/build_scorm.py
+ ├─ Kiểm tra lỗi        builder/src/course.js (dùng chung với lệnh đóng gói)
  ├─ Xem thử             Player chạy trong iframe, video bằng Blob URL
  └─ Xuất zip            zip streaming (STORED cho video) → ghi thẳng xuống ổ cứng
 ```
@@ -36,7 +38,7 @@ Trình duyệt của trainer (Chrome/Edge)
 - Một nút "Chọn thư mục khóa" (chứa video và Excel). Chrome/Edge dùng `showDirectoryPicker()` để giữ quyền đọc thư mục: sửa Excel xong bấm **"Kiểm tra lại"** là đọc lại cả thư mục, không phải chọn lại. Trình duyệt khác dùng `<input webkitdirectory>`, nút đổi thành "Chọn lại thư mục".
 - **Tự tìm file Excel** trong thư mục (bỏ qua `~$…`). Nhiều file Excel: lấy file sửa gần nhất, hiện danh sách để đổi; lần kiểm tra sau giữ file đã chọn. Không có Excel: vẫn cho đặt pop-up, kèm link Excel mẫu. Link "Chọn file Excel khác" cho Excel nằm ngoài thư mục (`showOpenFilePicker` để cũng đọc lại được).
 - **Thanh trạng thái ở đầu bước 3 (Kiểm tra)**: tên file Excel · đọc lúc giờ:phút:giây · số lỗi · nút Kiểm tra lại. Cho trainer thấy Excel là bản nháp, sửa dần được.
-- Tìm video ở **mọi thư mục con** theo tên file ghi trong Excel (giống `find_file()` của `build_scorm.py`). Hai file trùng tên ở hai thư mục → báo lỗi, trainer ghi rõ thư mục, ví dụ `01. Tong quan/gioi-thieu.mp4`
+- Tìm video ở **mọi thư mục con** theo tên file ghi trong Excel. Hai file trùng tên ở hai thư mục → báo lỗi, trainer ghi rõ thư mục, ví dụ `01. Tong quan/gioi-thieu.mp4`
 - Tùy chọn: chọn file logo
 - Có link tải **file Excel mẫu** (`templates/Mau_nhap_lieu_khoa_hoc.xlsx`)
 
@@ -50,7 +52,7 @@ Trình duyệt của trainer (Chrome/Edge)
 **Bước 3 – Kiểm tra**
 - Tóm tắt: tên khóa, mã khóa, số video, tổng thời lượng, số pop-up, số câu ngân hàng đề, luật thi.
 - Danh sách lỗi theo dạng **"Sheet Câu hỏi, dòng 7: đáp án đúng 'E' không hợp lệ"**. Có lỗi thì không cho xuất.
-- Kiểm tra (tối thiểu bằng `build_scorm.py`, cộng thêm):
+- Kiểm tra:
   - thiếu file video / tên file không khớp (gợi ý tên gần giống nếu có)
   - Video số ngoài phạm vi, mốc thời gian sai định dạng
   - **mốc pop-up vượt quá thời lượng video** (mới, đọc thời lượng bằng thẻ `<video>`)
@@ -69,7 +71,7 @@ Trình duyệt của trainer (Chrome/Edge)
 - Trình duyệt không có `showSaveFilePicker` (Firefox, Safari): tạo zip trong bộ nhớ và tải về, **chỉ cho khóa < 500 MB**, lớn hơn thì báo dùng Chrome/Edge.
 - Sau khi xuất, hiện **"Thông tin để tạo khóa trên Workday"**: Tên khóa, Mã khóa, Mô tả ngắn, Tổng thời lượng (phút), có nút copy từng dòng.
 
-## 4. Đầu ra phải tương đương `build_scorm.py`
+## 4. Đầu ra
 
 Cấu trúc zip:
 ```
@@ -96,11 +98,11 @@ window.COURSE = {
 };
 ```
 
-`imsmanifest.xml`: giữ y hệt mẫu trong `build_scorm.py` (SCORM 1.2, 1 SCO, `href="index.html"`, liệt kê mọi file).
+`imsmanifest.xml`: xem `manifest()` trong `builder/src/package.js` (SCORM 1.2, 1 SCO, `href="index.html"`, liệt kê mọi file).
 
-Quy tắc đọc Excel: xem `read_excel()` trong `tools/build_scorm.py`. Dòng ví dụ (cột STT bắt đầu bằng "(Ví dụ)" ở sheet Video, hoặc câu hỏi bắt đầu bằng "(Ví dụ)") bị bỏ qua.
+Quy tắc đọc Excel: xem `readCourse()` trong `builder/src/course.js`. Dòng ví dụ (cột STT bắt đầu bằng "(Ví dụ)" ở sheet Video, hoặc câu hỏi bắt đầu bằng "(Ví dụ)") bị bỏ qua.
 
-**Test tương đương (bắt buộc):** script so sánh zip của Builder với zip của `build_scorm.py` cho khóa demo: cùng danh sách file, `course.js` parse ra cùng JSON (bỏ qua khác biệt duration ±1 giây), manifest parse được. Sau đó giải nén gói của Builder và chạy `tests/test_player.py` phải đạt hết (43/43).
+**Test tương đương (bắt buộc):** gói khóa demo phải khớp gói mẫu `builder/tests/golden/ATLD-DEMO.json` (cùng danh sách file, `course.js` cùng JSON, manifest hợp lệ); gói Builder web xuất ra phải giống gói của lệnh đóng gói; chạy `tests/test_player.py` trên gói phải đạt hết (43/43). Cả ba nằm trong `bash tests/run_all.sh`.
 
 ## 5. Giao diện
 

@@ -1,12 +1,12 @@
 // Đọc dữ liệu khóa học từ Excel + thư mục video và kiểm tra lỗi.
-// Quy tắc đọc phải giống read_excel() trong tools/build_scorm.py (bản tham chiếu).
+// Dùng chung cho Builder web và lệnh đóng gói scripts/build-scorm.mjs.
 // Không đụng tới trình duyệt ở đây để chạy test được bằng Node.
+import defaults from "./defaults.json" with { type: "json" };
+import { VIDEO_EXT, mmss } from "./util.js";
 
 const LETTERS = "ABCD";
 const SHEETS = { info: "Thông tin khóa", video: "Video", question: "Câu hỏi" };
-export const DEFAULT_CONTACT =
-  "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại.";
-const VIDEO_EXT = /\.(mp4|m4v|mov|webm|avi|mkv|wmv|flv|mpe?g)$/i;
+export const DEFAULT_CONTACT = defaults.contact; // sửa trong defaults.json
 export const SIZE_WARN = 3.5 * 1024 ** 3; // Workday giới hạn 4 GB mỗi gói
 const SIZE_LIMIT = 4 * 1024 ** 3 - 64 * 1024 ** 2; // chừa chỗ cho Player + header zip
 const POPUP_GAP = 60;
@@ -18,7 +18,7 @@ export function cell(v) {
 }
 
 // "01:30" -> 90 giây. Nếu Excel đã tự đổi thành giờ (số thập phân của ngày),
-// hiểu lại giờ:phút thành phút:giây như người nhập muốn (giống build_scorm.py).
+// hiểu lại giờ:phút thành phút:giây như người nhập muốn.
 export function parseTime(v) {
   if (typeof v === "number") {
     if (v < 0 || v >= 1) return null;
@@ -34,10 +34,6 @@ export function formatDuration(sec) {
   sec = Math.round(sec);
   const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
   return h ? `${h} giờ ${m} phút` : m ? `${m} phút ${s} giây` : `${s} giây`;
-}
-
-function mmss(sec) {
-  return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 }
 
 function levenshtein(a, b) {

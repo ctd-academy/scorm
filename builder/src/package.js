@@ -1,4 +1,5 @@
-// Đóng gói SCORM 1.2: phải cho ra gói tương đương build() trong tools/build_scorm.py.
+// Đóng gói SCORM 1.2: course.js + imsmanifest.xml + Player + video, tài liệu, logo.
+// Dùng chung cho Builder web và lệnh đóng gói scripts/build-scorm.mjs.
 import { ZipWriter } from "./zip.js";
 
 const xml = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -49,7 +50,7 @@ export async function writePackage({ course, files, playerFiles, sink, onProgres
   const zip = new ZipWriter(sink, (n) => { done += n; onProgress(done, total); });
 
   const names = [];
-  // Trình xem PDF (pdfjs/) chỉ cần khi khóa có tài liệu (giống build_scorm.py)
+  // Trình xem PDF (pdfjs/) chỉ cần khi khóa có tài liệu
   const hasDocs = course.videos.some((v) => v.docs && v.docs.length);
   for (const p of playerFiles.filter((p) => hasDocs || !p.path.startsWith("pdfjs/"))) {
     await zip.addBytes(p.path, p.data);
