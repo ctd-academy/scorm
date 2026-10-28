@@ -30,7 +30,6 @@ DOCS = {
 CSS = """
 @page { size: 1280px 720px; margin: 0; }
 body { margin: 0; font-family: 'DejaVu Sans', sans-serif; }
-
 .s { width: 1280px; height: 720px; box-sizing: border-box; padding: 70px 90px; page-break-after: always; position: relative; background: #fff; }
 .s.cover { background: #16315e; color: #fff; display: flex; flex-direction: column; justify-content: center; }
 .cover small { color: #5fd1c1; font-size: 26px; letter-spacing: .1em; }
