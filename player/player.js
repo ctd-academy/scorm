@@ -8,6 +8,8 @@
    - Pop-up: không tính điểm; trả lời sai -> xem lại đoạn trước câu hỏi
    - Bài thi cuối: tùy chỉnh theo khóa (số câu, thời gian, hiện đáp án,
      điểm đạt, số lượt); hết lượt -> khóa bài thi, liên hệ L&OD
+   - Tài liệu PDF theo từng video (không bắt buộc): xem song song khi video
+     đang chạy, không có nút tải/in, ẩn khi làm bài thi
    ============================================================ */
 (function () {
   "use strict";
@@ -47,6 +49,7 @@
   var curRate = 1;
   var vid = null, popupOpen = false, lastSave = 0;
   var quizTimer = null;
+  var docOpen = false;     // học viên đang mở tài liệu: sang bài sau (có tài liệu) thì mở sẵn
 
   SCORM.start(C.id);
   load();
@@ -151,6 +154,8 @@
       stopTimer();
     }
     if (vid) { vid.pause(); vid.removeAttribute("src"); vid.load(); vid = null; }
+    closeDocView();
+    document.querySelector(".layout").classList.remove("doc-open");
     view = target;
     save(true);
     renderToc();
@@ -170,14 +175,22 @@
     var speedOpts = SPEEDS.map(function (s) { return '<option value="' + s + '"' + (s === curRate ? " selected" : "") + ">" + s + "x</option>"; }).join("");
     var nextLabel = i < VIDEOS.length - 1 ? "Bài tiếp theo →" : (HAS_QUIZ ? "Làm bài kiểm tra →" : "Hoàn thành");
 
+    var docs = v.docs || [];
     $("main").innerHTML =
       "<h2>" + esc(v.title) + "</h2>" +
       '<div class="sub">Bài ' + (i + 1) + "/" + VIDEOS.length + (pops.length ? " · " + pops.length + " câu hỏi giữa bài" : "") + "</div>" +
+      '<div class="lesson" id="lesson"><div class="lesson-video">' +
       '<div class="vwrap"><video id="vid" playsinline preload="metadata" controls controlsList="nodownload noplaybackrate" disablePictureInPicture src="' + esc(v.src) + '"></video>' +
       '<div class="overlay" id="pop"></div></div>' +
       '<div class="vbar"><span class="watch" id="watch"></span>' +
       '<label>Tốc độ <select id="speed">' + speedOpts + "</select></label></div>" +
-      '<div class="next-row"><button class="btn primary" id="nextBtn"' + (st[2] ? "" : " disabled") + ">" + nextLabel + "</button></div>";
+      '<div class="next-row">' + (docs.length ? '<button class="btn" id="docBtn">📄 Tài liệu' + (docs.length > 1 ? " (" + docs.length + ")" : "") + "</button>" : "") +
+      '<button class="btn primary" id="nextBtn"' + (st[2] ? "" : " disabled") + ">" + nextLabel + "</button></div>" +
+      '</div><aside class="doc" id="doc" hidden></aside></div>';
+    if (docs.length) {
+      $("docBtn").onclick = function () { if (docView) closeDoc(); else openDoc(docs, 0); };
+      if (docOpen) openDoc(docs, 0);
+    }
 
     vid = $("vid");
     var maxW = st[0], seekGuard = false;
@@ -283,6 +296,144 @@
       else renderCourseDone();
     };
   }
+
+  // ---------------------------------------------------------------- tài liệu PDF
+  // Vẽ PDF bằng PDF.js (pdfjs/, chỉ nạp khi mở tài liệu) lên canvas: không có nút tải/in của trình duyệt,
+  // chạy giống nhau trên máy tính và điện thoại. Video vẫn chạy khi xem tài liệu.
+  var pdfLib = null, docView = null;
+  function abs(path) { return new URL(path, location.href).href; }
+  function loadPdfLib() {
+    if (!pdfLib) pdfLib = import(abs("pdfjs/pdf.min.js")).then(function (m) {
+      m.GlobalWorkerOptions.workerSrc = abs("pdfjs/pdf.worker.min.js");
+      return m;
+    });
+    return pdfLib;
+  }
+
+  function openDoc(docs, k) {
+    closeDocView();
+    docOpen = true;
+    var box = $("doc"), lesson = $("lesson");
+    document.querySelector(".layout").classList.add("doc-open");
+    lesson.classList.add("with-doc");
+    box.hidden = false;
+    box.innerHTML = '<div class="doc-bar">' +
+      (docs.length > 1 ? '<select id="docPick">' + docs.map(function (d, j) { return '<option value="' + j + '"' + (j === k ? " selected" : "") + ">" + esc(d.title) + "</option>"; }).join("") + "</select>"
+        : '<b class="doc-title">' + esc(docs[k].title) + "</b>") +
+      '<span class="doc-page" id="docPage"></span>' +
+      '<span class="doc-zoom"><button id="docOut" title="Thu nhỏ">−</button><button id="docIn" title="Phóng to">+</button></span>' +
+      '<button class="doc-close" id="docClose" title="Đóng tài liệu">✕</button></div>' +
+      '<div class="doc-pages" id="docPages"><p class="doc-msg">Đang mở tài liệu…</p></div>';
+    $("docBtn").textContent = "📄 Ẩn tài liệu";
+    $("docClose").onclick = closeDoc;
+    if ($("docPick")) $("docPick").onchange = function () { openDoc(docs, parseInt(this.value, 10)); };
+    box.oncontextmenu = function (e) { e.preventDefault(); };
+
+    var dv = docView = { docs: docs, zoom: 1, pdf: null, pages: [], obs: null, task: null };
+    $("docOut").onclick = function () { setZoom(dv, dv.zoom / 1.25); };
+    $("docIn").onclick = function () { setZoom(dv, dv.zoom * 1.25); };
+    loadPdfLib().then(function (lib) {
+      if (docView !== dv) return;
+      dv.task = lib.getDocument({ url: abs(docs[k].src), isEvalSupported: false,
+        standardFontDataUrl: abs("pdfjs/standard_fonts/"), wasmUrl: abs("pdfjs/wasm/") });
+      return dv.task.promise;
+    }).then(function (pdf) {
+      if (!pdf) return;
+      if (docView !== dv) { pdf.destroy(); return; }
+      dv.pdf = pdf;
+      return pdf.getPage(1).then(function (p1) { layoutPages(dv, p1.getViewport({ scale: 1 })); });
+    }).catch(function () {
+      if (docView === dv) $("docPages").innerHTML = '<p class="doc-msg">Không mở được tài liệu này. Bạn vẫn học tiếp video bình thường.</p>';
+    });
+  }
+
+  // Khung trống cho mọi trang (theo kích thước trang 1); chỉ vẽ trang đang ở gần màn hình để đỡ tốn bộ nhớ
+  function layoutPages(dv, vp1) {
+    var wrap = $("docPages"), n = dv.pdf.numPages;
+    wrap.innerHTML = "";
+    dv.ratio = vp1.height / vp1.width;
+    dv.obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        var pg = dv.pages[+e.target.getAttribute("data-p")];
+        if (e.isIntersecting) drawPage(dv, pg); else releasePage(pg);
+      });
+    }, { root: wrap, rootMargin: "150% 0px" });
+    for (var j = 0; j < n; j++) {
+      var el = document.createElement("div");
+      el.className = "doc-sheet"; el.setAttribute("data-p", j);
+      wrap.appendChild(el);
+      dv.pages.push({ n: j + 1, el: el, ratio: dv.ratio, drawn: 0, job: null });
+    }
+    sizePages(dv);
+    dv.pages.forEach(function (pg) { dv.obs.observe(pg.el); });
+    wrap.onscroll = function () { showPageNo(dv); };
+    showPageNo(dv);
+  }
+
+  function sheetWidth(dv) { return Math.max(120, ($("docPages").clientWidth - 20) * dv.zoom); }
+  function sizePages(dv) {
+    var w = sheetWidth(dv);
+    dv.pages.forEach(function (pg) { pg.el.style.width = w + "px"; pg.el.style.height = Math.round(w * pg.ratio) + "px"; });
+  }
+
+  function drawPage(dv, pg) {
+    var w = sheetWidth(dv);
+    if (pg.drawn === w || pg.job) return;
+    pg.job = dv.pdf.getPage(pg.n).then(function (page) {
+      if (docView !== dv) return;
+      var base = page.getViewport({ scale: 1 });
+      pg.ratio = base.height / base.width;
+      pg.el.style.height = Math.round(w * pg.ratio) + "px";
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var vp = page.getViewport({ scale: w / base.width * dpr });
+      var c = document.createElement("canvas");
+      c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      return page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise.then(function () {
+        if (docView !== dv) return;
+        pg.el.innerHTML = ""; pg.el.appendChild(c); pg.drawn = w;
+      });
+    }).catch(function () {}).then(function () { pg.job = null; });
+  }
+  function releasePage(pg) { if (pg && pg.drawn && !pg.job) { pg.el.innerHTML = ""; pg.drawn = 0; } }
+
+  function setZoom(dv, z) {
+    var wrap = $("docPages"), at = wrap.scrollTop / Math.max(1, wrap.scrollHeight);
+    dv.zoom = Math.min(3, Math.max(0.5, z));
+    if (!dv.pdf) return;
+    sizePages(dv);
+    wrap.scrollTop = at * wrap.scrollHeight;
+    dv.pages.forEach(function (pg) { if (pg.drawn) { pg.drawn = -1; drawPage(dv, pg); } });
+  }
+
+  function showPageNo(dv) {
+    var wrap = $("docPages"), mid = wrap.scrollTop + wrap.clientHeight / 3, cur = 1;
+    dv.pages.forEach(function (pg) { if (pg.el.offsetTop <= mid) cur = pg.n; });
+    if (wrap.scrollTop > 0 && wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 2) cur = dv.pages.length; // cuộn hết: trang cuối
+    $("docPage").textContent = "Trang " + cur + "/" + dv.pages.length;
+  }
+
+  function closeDocView() {
+    var dv = docView;
+    docView = null;
+    if (!dv) return;
+    if (dv.obs) dv.obs.disconnect();
+    if (dv.task) dv.task.destroy();
+  }
+  function closeDoc() {
+    closeDocView();
+    docOpen = false;
+    document.querySelector(".layout").classList.remove("doc-open");
+    if ($("lesson")) $("lesson").classList.remove("with-doc");
+    if ($("doc")) { $("doc").hidden = true; $("doc").innerHTML = ""; }
+    if ($("docBtn")) $("docBtn").textContent = "📄 Tài liệu" + (vidDocs() > 1 ? " (" + vidDocs() + ")" : "");
+  }
+  function vidDocs() { return typeof view === "number" && VIDEOS[view] && VIDEOS[view].docs ? VIDEOS[view].docs.length : 0; }
+
+  var resizeT = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(function () { if (docView && docView.pdf) setZoom(docView, docView.zoom); }, 200);
+  });
 
   function exitFullscreen() {
     try {

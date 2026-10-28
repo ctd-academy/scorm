@@ -10,7 +10,7 @@ Repo này gồm 2 phần:
 
 | Phần | Trạng thái | Vai trò |
 |---|---|---|
-| `player/` | ✅ Xong, 26/26 test đạt | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
+| `player/` | ✅ Xong, 43/43 test đạt (có tài liệu PDF) | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
 | `builder/` | 🟡 **M1–M3 xong** (kiểm tra lỗi, đặt pop-up, xem thử, xuất zip SCORM), còn M4 (hướng dẫn 1 trang cho trainer) | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
 
 Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&OD, không phải lập trình viên.
@@ -29,7 +29,7 @@ Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&O
 2. **1 khóa = 1 gói SCORM 1.2** chứa toàn bộ video + pop-up + bài thi.
 3. **Excel là nơi nhập liệu chính** (template chuẩn, trống: `templates/Mau_nhap_lieu_khoa_hoc.xlsx`; khóa demo: `demo-course/ATLD-DEMO.xlsx`; cả hai do `tools/make_template.py` tạo). Builder không thay Excel bằng form.
 4. **Player là nguồn chuẩn.** Builder nhúng nguyên `player/` vào gói, không viết lại luật chơi. Sửa luật chơi = sửa `player/` + chạy lại test.
-5. Luật chơi Player: học tuần tự · chỉ tua lại phần đã xem · tối đa 2x · chuyển tab thì dừng · pop-up không tính điểm, sai thì xem lại từ pop-up trước (hoặc đầu video) · bài thi tùy chỉnh theo khóa · hết lượt thì báo `failed`, khóa bài thi, hiện liên hệ L&OD · chứng nhận do Workday cấp.
+5. Luật chơi Player: học tuần tự · chỉ tua lại phần đã xem · tối đa 2x · chuyển tab thì dừng · pop-up không tính điểm, sai thì xem lại từ pop-up trước (hoặc đầu video) · bài thi tùy chỉnh theo khóa · hết lượt thì báo `failed`, khóa bài thi, hiện liên hệ L&OD · chứng nhận do Workday cấp · tài liệu PDF theo từng video (không bắt buộc): xem song song khi video chạy, không có nút tải/in, ẩn khi làm bài thi, không in tên học viên.
 6. **Host:** repo `ctd-academy/scorm` (tài khoản team) và host trên **GitHub Pages**.
 7. **Không dùng Lovable** cho phần lõi (đóng gói, Player). Có thể dùng để phác giao diện.
 
@@ -40,14 +40,16 @@ CLAUDE.md                  file này
 README.md                  hướng dẫn nhanh cho người
 docs/HANDOFF.md            toàn bộ bối cảnh, quyết định, câu hỏi còn mở
 docs/BUILDER_SPEC.md       spec Builder web v1 ← đọc kỹ trước khi xây
-player/                    Player v1 (index.html, player.js, player.css, scorm12.js, logo.png, fonts/)
+player/                    Player v1 (index.html, player.js, player.css, scorm12.js, logo.png, fonts/,
+                           pdfjs/ = PDF.js 6.3.289 bản legacy, chỉ đưa vào gói khi khóa có tài liệu)
 brand/                     logo Coteccons gốc: bản trắng (nền tối) và bản màu (nền sáng)
 tools/build_scorm.py       động cơ đóng gói bằng Python = BẢN THAM CHIẾU cho Builder
 tools/make_template.py     tạo file Excel mẫu (kèm dữ liệu khóa demo)
-tools/setup_assets.sh      tải font, tạo Excel mẫu, tạo 3 video demo
+tools/make_demo_docs.py    tạo 3 PDF slide cho khóa demo (Playwright)
+tools/setup_assets.sh      tải font, tạo Excel mẫu, tạo 3 video demo, PDF demo
 templates/                 template Excel chuẩn (trống)
-demo-course/                khóa demo: ATLD-DEMO.xlsx + videos/ (3 video 55 giây có đồng hồ để thấy pop-up đúng giây)
-tests/                     LMS giả lập + 26 test Player + test giao diện Builder (Playwright)
+demo-course/                khóa demo: ATLD-DEMO.xlsx + videos/ (3 video 55 giây có đồng hồ để thấy pop-up đúng giây) + docs/ (3 PDF slide)
+tests/                     LMS giả lập + 43 test Player + test giao diện Builder (Playwright)
 builder/                   Builder web (Vite + JS thuần)
   src/xlsx.js              đọc .xlsx bằng fflate (không dùng SheetJS)
   src/course.js            đọc khóa + kiểm tra lỗi, phải khớp read_excel() của build_scorm.py
@@ -93,10 +95,12 @@ Cần: Python 3 + `openpyxl` + `playwright`, Node 18+, `ffmpeg`/`ffprobe`.
 - Gói zip: video và font lưu **STORED** (không nén lại), file text nén DEFLATE.
 - Khóa dài 120 phút ≈ 1–1,5 GB. Không được giữ cả zip trong RAM: phải **ghi streaming xuống ổ cứng** (`showSaveFilePicker`, chỉ Chrome/Edge). Trình duyệt khác tạo zip trong bộ nhớ, chỉ cho khóa < 500 MB.
 - **Không dùng zip streaming của fflate:** nó luôn ghi "data descriptor", kể cả với file STORED, mà `java.util.zip.ZipInputStream` (LMS chạy Java) không đọc được kiểu này. `src/zip.js` ghi header trước rồi quay lại điền CRC.
+- **Tài liệu PDF:** cột D sheet Video, chỉ đọc khi tiêu đề cột bắt đầu bằng "Tài liệu" (Excel mẫu cũ ghi "Ghi chú" thì bỏ qua). Nhiều file cách nhau `;`. Đóng vào `docs/<tên ghi trong Excel>`; cùng file cho nhiều video chỉ đóng 1 lần. PDF lưu STORED.
+- **PDF.js trong Player:** file đổi đuôi `.mjs` → `.js` (máy chủ LMS có thể trả `.mjs` sai kiểu, trình duyệt từ chối nạp module). Chỉ nạp (`import()`) khi học viên bấm Tài liệu. Vẽ lên canvas, chỉ vẽ trang gần màn hình. `pdfjs/` không đưa vào gói khi khóa không có tài liệu (cả `build_scorm.py` và Builder).
 - Test xuất khóa lớn trong Playwright phải dùng hồ sơ trình duyệt lưu trên đĩa (`launch_persistent_context`): hồ sơ mặc định nằm trong RAM, OPFS bị giới hạn dung lượng.
 
 ## Định nghĩa "xong" cho mỗi thay đổi
 
-- 26/26 test Player vẫn đạt (nếu có đụng `player/`).
+- 43/43 test Player vẫn đạt (nếu có đụng `player/`).
 - Gói do Builder xuất ra cho khóa demo **tương đương** gói do `build_scorm.py` xuất ra (cùng danh sách file, `course.js` cùng nội dung JSON, manifest hợp lệ), và chạy qua test Player.
 - Thử trên Chrome và Edge; Builder chạy được trên máy Windows và Mac.

@@ -96,6 +96,17 @@ test("gói Builder tương đương gói build_scorm.py cho khóa demo", async (
   }
 });
 
+test("khóa không có tài liệu: không đưa trình xem PDF (pdfjs/) vào gói", async () => {
+  const sink = memorySink();
+  const course = { id: "X", title: "X", description: "", logo: null, settings: {}, videos: [{ title: "a", src: "videos/a.mp4", duration: 1 }], popups: [], quiz: [] };
+  await writePackage({ course, files: [], playerFiles: playerFiles(), sink });
+  const out = join(TMP, "nodocs.zip");
+  writeFileSync(out, Buffer.from(await sink.blob().arrayBuffer()));
+  const py = `import zipfile,sys; print("|".join(zipfile.ZipFile(sys.argv[1]).namelist()))`;
+  const list = execFileSync("python3", ["-c", py, out]).toString().trim().split("|");
+  assert.ok(list.includes("player.js") && !list.some((n) => n.startsWith("pdfjs/")), list.join(", "));
+});
+
 test("tên file có dấu tiếng Việt được giữ nguyên", async () => {
   const sink = memorySink();
   const video = Object.assign(new Blob([new Uint8Array(9 * 1024 * 1024).fill(7)]), { name: "bài 1.mp4" });

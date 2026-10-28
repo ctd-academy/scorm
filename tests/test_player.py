@@ -1,4 +1,4 @@
-"""26 bài test tự động cho Player v1 (Playwright + Chromium).
+"""Test tự động cho Player v1 (Playwright + Chromium): luật học, bài thi, điện thoại, tài liệu PDF.
 
 Chuẩn bị (từ gốc repo):
   python3 tools/build_scorm.py demo-course/ATLD-DEMO.xlsx demo-course out
@@ -153,6 +153,65 @@ with sync_playwright() as p:
     mp.screenshot(path=SHOTS + "shot_mobile.png", full_page=True)
     check("Mobile: không tràn ngang", mp.evaluate("document.documentElement.scrollWidth <= window.innerWidth"))
     check("Chế độ xem thử khi không có LMS", mp.evaluate("!!document.querySelector('.preview-badge')"))
+
+    # ---- E. Tài liệu PDF xem song song với video
+    dctx = b.new_context(viewport={"width": 1300, "height": 920})
+    dp = dctx.new_page()
+    reqs = []
+    dp.on("request", lambda r: reqs.append(r.url))
+    dp.on("pageerror", lambda e: errors.append(str(e)))
+    dp.goto(URL); time.sleep(1.5)
+    df = dp.frames[1]
+    check("Tài liệu: bài có tài liệu hiện nút Tài liệu", df.evaluate("document.getElementById('docBtn')?.textContent") == "📄 Tài liệu")
+    check("Tài liệu: chưa mở thì chưa tải trình xem PDF", not any("/pdfjs/" in u for u in reqs))
+    df.wait_for_function("document.getElementById('vid').readyState >= 1", timeout=10000)
+    df.evaluate("() => { const v = document.getElementById('vid'); v.muted = true; v.play(); }")
+    df.click("#docBtn")
+    df.wait_for_selector("#docPages canvas", timeout=20000)
+    time.sleep(1.2)
+    check("Tài liệu: mở ra video vẫn chạy", df.evaluate("!document.getElementById('vid').paused && document.getElementById('vid').currentTime > 1"),
+          df.evaluate("document.getElementById('vid').currentTime"))
+    check("Tài liệu: hiện số trang", df.inner_text("#docPage") == "Trang 1/5", df.inner_text("#docPage"))
+    vb, db = df.locator(".vwrap").bounding_box(), df.locator("#doc").bounding_box()
+    check("Tài liệu: nằm bên phải video, cùng hàng", db["x"] >= vb["x"] + vb["width"] and db["y"] < vb["y"] + vb["height"], (vb, db))
+    check("Tài liệu: không có link tải, không dùng trình xem PDF của trình duyệt",
+          df.evaluate("!document.querySelector('#doc a, #doc iframe, #doc embed, #doc object')"))
+    check("Tài liệu: chặn chuột phải", df.evaluate("""() => { const e = new MouseEvent('contextmenu', {bubbles: true, cancelable: true});
+        document.querySelector('#docPages canvas').dispatchEvent(e); return e.defaultPrevented; }"""))
+    df.click("#docPages")
+    df.evaluate("document.getElementById('docPages').scrollTop = 1e6")
+    df.wait_for_function("document.getElementById('docPage').textContent === 'Trang 5/5'", timeout=5000)
+    df.wait_for_function("document.querySelectorAll('.doc-sheet')[4].querySelector('canvas')", timeout=10000)
+    check("Tài liệu: cuộn tới trang cuối, trang được vẽ", True)
+    check("Tài liệu: bấm vào tài liệu video vẫn chạy", not df.evaluate("document.getElementById('vid').paused"))
+    w0 = df.evaluate("document.querySelector('.doc-sheet').offsetWidth")
+    df.click("#docIn")
+    check("Tài liệu: phóng to", df.evaluate("document.querySelector('.doc-sheet').offsetWidth") > w0 * 1.2)
+    dp.screenshot(path=SHOTS + "shot_doc.png")
+    # sang bài 3: tài liệu vẫn mở (đang xem tài liệu), 2 file để chọn
+    df.evaluate("() => { const S = window.__ctd.S; S.v[0][2] = 1; S.v[1][2] = 1; window.__ctd.go(1); }")
+    check("Tài liệu: bài không có tài liệu thì không có nút, không chia cột",
+          df.evaluate("!document.getElementById('docBtn') && !document.querySelector('.layout.doc-open')"))
+    df.evaluate("window.__ctd.go(2)")
+    df.wait_for_selector("#docPages canvas", timeout=20000)
+    check("Tài liệu: sang bài có tài liệu thì tự mở lại", df.evaluate("document.querySelectorAll('#docPick option').length") == 2)
+    df.select_option("#docPick", "1")
+    df.wait_for_function("document.getElementById('docPage').textContent === 'Trang 1/2'", timeout=20000)
+    check("Tài liệu: đổi sang file thứ 2", True)
+    df.click("#docClose")
+    check("Tài liệu: đóng được, video rộng lại", df.evaluate("document.getElementById('doc').hidden && !document.querySelector('.layout.doc-open')"))
+    df.click("#docBtn")
+    df.wait_for_selector("#docPages canvas", timeout=20000)
+    df.evaluate("() => { const S = window.__ctd.S; S.v[2][2] = 1; window.__ctd.go('quiz'); }")
+    check("Tài liệu: ẩn khi vào bài kiểm tra", df.evaluate("!document.getElementById('doc') && !document.querySelector('.layout.doc-open')"))
+    dctx.close()
+    # điện thoại: tài liệu nằm dưới video, không tràn ngang
+    mp.evaluate("document.getElementById('docBtn').click()")
+    mp.wait_for_selector("#docPages canvas", timeout=20000)
+    vb, db = mp.locator(".vwrap").bounding_box(), mp.locator("#doc").bounding_box()
+    check("Mobile: tài liệu nằm dưới video", db["y"] >= vb["y"] + vb["height"], (vb, db))
+    check("Mobile: mở tài liệu không tràn ngang", mp.evaluate("document.documentElement.scrollWidth <= window.innerWidth"))
+    mp.screenshot(path=SHOTS + "shot_doc_mobile.png")
 
     check("Không có lỗi JavaScript", not errors, errors[:3])
     b.close()

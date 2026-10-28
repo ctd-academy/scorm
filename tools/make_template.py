@@ -43,6 +43,7 @@ def make(demo, OUT):
   ("2","Ô nền vàng nhạt là ô cần điền. Không đổi tên sheet, không đổi tiêu đề cột."),
   ("3","Sheet 'Thông tin khóa': thông tin chung và luật bài kiểm tra của khóa."),
   ("4","Sheet 'Video': mỗi dòng là 1 bài (1 video), theo đúng thứ tự học. Tên file phải trùng tên file video trong thư mục khóa."),
+  ("Tài liệu PDF","Không bắt buộc. Cột D sheet 'Video': tên file PDF (thường là slide) học viên xem song song khi nghe video. Để file trong thư mục khóa; nhiều file cách nhau bằng dấu ;. Học viên chỉ xem, không có nút tải/in"),
   ("5","Sheet 'Câu hỏi': gồm cả câu hỏi pop-up (giữa video) và câu hỏi bài kiểm tra cuối khóa."),
   ("6","Dòng 2 ở mỗi sheet (chữ nghiêng) là VÍ DỤ. Xóa hoặc ghi đè khi nhập khóa thật."),
   ("",""),
@@ -73,7 +74,7 @@ def make(demo, OUT):
   ("•","Không dùng lại câu hỏi cuối khóa làm pop-up"),
   ]
   for i,(a,b) in enumerate(lines,3):
-      g.cell(row=i,column=1,value=a).font=bold if b=="" or a in("Đóng gói","Loại","Video số","Mốc thời gian","Phương án","Đáp án đúng","Giải thích","Xáo phương án","Gợi ý") else body
+      g.cell(row=i,column=1,value=a).font=bold if b=="" or a in("Đóng gói","Tài liệu PDF","Loại","Video số","Mốc thời gian","Phương án","Đáp án đúng","Giải thích","Xáo phương án","Gợi ý") else body
       if b=="" and a: g.cell(row=i,column=1).font=Font(name=F,size=11,bold=True,color=NAVY)
       c=g.cell(row=i,column=2,value=b); c.font=body; c.alignment=wrap
   g.column_dimensions["A"].width=16; g.column_dimensions["B"].width=110
@@ -118,12 +119,13 @@ def make(demo, OUT):
 
   # ---------------- Video
   v=wb.create_sheet("Video")
-  header(v,1,["STT","Tên bài","Tên file video","Ghi chú"])
-  v["A2"]="(Ví dụ)"; v["B2"]="Giới thiệu khóa học"; v["C2"]="01_gioi-thieu.mp4"; v["D2"]="Dòng ví dụ – nhập dữ liệu thật từ dòng 3"
+  header(v,1,["STT","Tên bài","Tên file video","Tài liệu PDF (tùy chọn)"])
+  v["A2"]="(Ví dụ)"; v["B2"]="Giới thiệu khóa học"; v["C2"]="01_gioi-thieu.mp4"; v["D2"]="slide-bai-1.pdf; tai-lieu-them.pdf"
+  v["D1"].comment=Comment("Tên file PDF học viên xem kèm video này (thường là slide bài giảng). Để file trong thư mục khóa. Nhiều file thì cách nhau bằng dấu ;","L&OD")
   for c in "ABCD": v[f"{c}2"].font=Font(name=F,size=10,italic=True,color="636468")
-  vids=[(1,"Vì sao an toàn là trên hết","01_vi-sao-an-toan.mp4",""),
+  vids=[(1,"Vì sao an toàn là trên hết","01_vi-sao-an-toan.mp4","slide-bai-1.pdf"),
         (2,"Trang bị bảo hộ cá nhân (PPE)","02_bao-ho-ca-nhan.mp4",""),
-        (3,"Nhận diện mối nguy tại công trường","03_nhan-dien-moi-nguy.mp4","")] if demo else []
+        (3,"Nhận diện mối nguy tại công trường","03_nhan-dien-moi-nguy.mp4","slide-bai-3.pdf; checklist-moi-nguy.pdf")] if demo else []
   for i,row in enumerate(vids,3):
       for j,val in enumerate(row,1):
           c=v.cell(row=i,column=j,value=val); c.font=body; c.fill=inp; c.border=box
