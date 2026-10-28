@@ -146,7 +146,8 @@ async function check() {
   }
   if (my !== runId) return;
   const nVideo = folder.filter((f) => VIDEO_EXT.test(f.name)).length;
-  $("folderStatus").textContent = `${state.folderName} (${nVideo} video)`;
+  const nPdf = folder.filter((f) => /\.pdf$/i.test(f.name)).length;
+  $("folderStatus").textContent = `${state.folderName} (${nVideo} video${nPdf ? ` · ${nPdf} tài liệu PDF` : ""})`;
   $("folderStatus").className = "status ok";
 
   const ex = await pickExcel(folder).catch((e) => ({ error: e }));
@@ -195,6 +196,18 @@ async function check() {
   }
   if (my !== runId) return;
   const result = readCourse(sheets, folder, durations, state.logo);
+  // Đọc thử đầu mỗi tài liệu: file OneDrive "chỉ trên mạng" chưa tải về, hoặc file đổi đuôi thành .pdf
+  for (const f of result.files.filter((f) => f.zipPath.startsWith("docs/"))) {
+    let head = "";
+    try {
+      head = new TextDecoder().decode(await f.file.slice(0, 5).arrayBuffer());
+    } catch {
+      result.errors.push(`Không đọc được tài liệu '${f.path}'. Nếu thư mục khóa nằm trên OneDrive: chuột phải thư mục > "Always keep on this device", đợi các file hiện dấu tick xanh rồi bấm Kiểm tra lại`);
+      continue;
+    }
+    if (head !== "%PDF-") result.errors.push(`Tài liệu '${f.path}' có đuôi .pdf nhưng không phải file PDF thật. Hãy mở file gốc và xuất lại sang PDF`);
+  }
+  if (my !== runId) return;
   const n = result.errors.length;
   showBar(`📄 <b>${esc(name)}</b> · đọc lúc ${now()} · ${n ? `<span class="bad">${n} lỗi</span>` : '<span class="ok">không có lỗi</span>'}`);
   render(result, folder);
@@ -236,7 +249,8 @@ function render({ course, errors, warnings, files, totalSize }, folder) {
     <div><small>Tổng thời lượng</small><b>${formatDuration(total)}</b></div>
     <div><small>Câu pop-up</small><b>${course.popups.length}</b></div>
     <div><small>Câu ngân hàng đề</small><b>${course.quiz.length}</b></div>
-    <div class="wide" style="grid-column: span 4"><small>Luật bài kiểm tra</small><b>${esc(exam)}</b></div>
+    <div><small>Video có tài liệu PDF</small><b>${course.videos.filter((v) => v.docs).length}/${course.videos.length}</b></div>
+    <div class="wide" style="grid-column: span 3"><small>Luật bài kiểm tra</small><b>${esc(exam)}</b></div>
   </div>`;
   if (course.videos.length) {
     const docsOf = (v) => (v.docs || []).map((d) => esc(d.src.slice(5))).join("<br>") || "–";

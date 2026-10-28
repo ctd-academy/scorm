@@ -2,7 +2,7 @@
 // Dùng chung cho Builder web và lệnh đóng gói scripts/build-scorm.mjs.
 // Không đụng tới trình duyệt ở đây để chạy test được bằng Node.
 import defaults from "./defaults.json" with { type: "json" };
-import { VIDEO_EXT, mmss } from "./util.js";
+import { VIDEO_EXT, VIDEO_EXTS, mmss } from "./util.js";
 
 const LETTERS = "ABCD";
 const SHEETS = { info: "Thông tin khóa", video: "Video", question: "Câu hỏi" };
@@ -167,8 +167,13 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
   for (let r = 2; r < vrows.length; r++) {
     const row = vrows[r];
     if (!row || !cell(row[3]) || cell(row[1]).startsWith("(Ví dụ)")) continue;
-    const fname = cell(row[3]).replace(/\\/g, "/");
-    const { entry: src, dup } = findFile(fname);
+    let fname = cell(row[3]).replace(/\\/g, "/");
+    let { entry: src, dup } = findFile(fname);
+    // Windows ẩn đuôi file nên người dùng hay ghi "Bai 1" thay vì "Bai 1.mp4": tự thêm đuôi video
+    if (!src && !dup && !VIDEO_EXT.test(fname)) {
+      const ext = VIDEO_EXTS.find((x) => { const f = findFile(fname + x); return f.entry || f.dup; });
+      if (ext) ({ entry: src, dup } = findFile((fname += ext)));
+    }
     if (dup) {
       errors.push(at(SHEETS.video, r, dupMsg(fname, dup)));
     } else if (!src) {
@@ -184,15 +189,25 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
     }
     const docs = [];
     for (const raw of hasDocs ? cell(row[4]).split(/[;\n]/) : []) {
-      const d = raw.trim().replace(/\\/g, "/");
+      let d = raw.trim().replace(/\\/g, "/");
       if (!d) continue;
-      const found = findFile(d);
-      if (!/\.pdf$/i.test(d)) errors.push(at(SHEETS.video, r, `tài liệu '${d}' không phải file PDF. Hãy xuất sang PDF (trong PowerPoint: File > Save As > PDF)`));
-      else if (found.dup) errors.push(at(SHEETS.video, r, dupMsg(d, found.dup)));
+      let found = findFile(d);
+      // Không có đuôi (Windows ẩn đuôi file): "Slide bai 1" -> "Slide bai 1.pdf"
+      if (!found.entry && !found.dup && !/\.pdf$/i.test(d)) {
+        const withPdf = findFile(d + ".pdf");
+        if (withPdf.entry || withPdf.dup) [found, d] = [withPdf, d + ".pdf"];
+      }
+      const pdfs = folder.filter((f) => /\.pdf$/i.test(f.name));
+      if (found.dup) errors.push(at(SHEETS.video, r, dupMsg(d, found.dup)));
       else if (!found.entry) {
-        const pdfs = folder.filter((f) => /\.pdf$/i.test(f.name));
-        const hint = similar(d.split("/").pop(), pdfs.map((f) => f.name));
+        const hint = similar(d.split("/").pop(), pdfs.map((f) => f.name)) || similar(d.split("/").pop() + ".pdf", pdfs.map((f) => f.name));
         errors.push(at(SHEETS.video, r, `không tìm thấy tài liệu '${d}' trong thư mục bạn chọn` + (hint ? `. Có phải ý bạn là '${hint}'?` : "")));
+      } else if (!/\.pdf$/i.test(found.entry.name)) {
+        const stem = found.entry.name.replace(/\.[^.]*$/, "").toLowerCase();
+        const pdf = pdfs.find((f) => f.name.slice(0, -4).toLowerCase() === stem);
+        errors.push(at(SHEETS.video, r, pdf
+          ? `tài liệu '${d}' không phải file PDF. Trong thư mục có '${pdf.name}': hãy ghi tên file này`
+          : `tài liệu '${d}' không phải file PDF. Hãy xuất sang PDF (trong PowerPoint: File > Save As > PDF)`));
       } else {
         if (!docFiles.has("docs/" + d)) {
           docFiles.set("docs/" + d, found.entry);

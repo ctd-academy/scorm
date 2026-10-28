@@ -59,11 +59,17 @@ export async function writePackage({ course, files, playerFiles, sink, onProgres
   await zip.addBytes("course.js", enc.encode(courseJs(course)));
   names.push("course.js");
   for (const f of files) {
-    if (f.file.size > 8 * 1024 * 1024) await zip.addFile(f.zipPath, f.file);
-    else {
-      await zip.addBytes(f.zipPath, new Uint8Array(await f.file.arrayBuffer()));
-      done += f.file.size;
-      onProgress(done, total);
+    try {
+      if (f.file.size > 8 * 1024 * 1024) await zip.addFile(f.zipPath, f.file);
+      else {
+        await zip.addBytes(f.zipPath, new Uint8Array(await f.file.arrayBuffer()));
+        done += f.file.size;
+        onProgress(done, total);
+      }
+    } catch (e) {
+      // Lỗi đọc file (thường là file OneDrive chưa tải về máy): nói rõ file nào
+      if (e.name !== "NotReadableError" && e.name !== "NotFoundError") throw e;
+      throw new Error(`không đọc được file '${f.path || f.zipPath}'. Nếu thư mục khóa nằm trên OneDrive: chuột phải thư mục > "Always keep on this device", đợi các file hiện dấu tick xanh`);
     }
     names.push(f.zipPath);
   }

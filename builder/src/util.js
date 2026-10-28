@@ -1,6 +1,7 @@
 // Hàm nhỏ dùng chung cho các bước của Builder và lệnh đóng gói (scripts/build-scorm.mjs).
 // Không đụng tới trình duyệt ở đây để chạy được bằng Node.
 
+export const VIDEO_EXTS = [".mp4", ".m4v", ".mov", ".webm", ".avi", ".mkv", ".wmv", ".flv", ".mpg", ".mpeg"];
 export const VIDEO_EXT = /\.(mp4|m4v|mov|webm|avi|mkv|wmv|flv|mpe?g)$/i;
 
 // Bỏ qua file khóa của Excel (~$...) và file/thư mục ẩn (.DS_Store, .git…)

@@ -134,6 +134,7 @@ with sync_playwright() as p:
     check("Tóm tắt: tổng thời lượng 2 phút 45 giây", "2 phút 45 giây" in s, s)
     nums = dict(re.findall(r"(Số video|Câu pop-up|Câu ngân hàng đề)\n(\d+)", s))
     check("Tóm tắt: 3 video · 4 pop-up · 6 câu", nums == {"Số video": "3", "Câu pop-up": "4", "Câu ngân hàng đề": "6"}, nums)
+    check("Tóm tắt: 2/3 video có tài liệu PDF", "Video có tài liệu PDF\n2/3" in s, s)
     check("Tóm tắt: luật thi", "Đạt từ 80% · 3 lượt · 5 câu mỗi lần (rút từ 6) · 10 phút" in s, s)
     docs_col = page.locator("#check table tbody tr td:nth-child(6)").all_inner_texts()
     check("Bảng kiểm tra: cột Tài liệu theo từng video", docs_col == ["slide-bai-1.pdf", "–", "slide-bai-3.pdf\nchecklist-moi-nguy.pdf"], docs_col)
@@ -321,7 +322,7 @@ with sync_playwright() as p:
     page4 = b.new_page(viewport={"width": 1366, "height": 768})
     page4.add_init_script(SAVE_STUB)
     load_demo(page4, folder=nested)
-    check("Video trong thư mục con: đếm đủ 3 video", page4.inner_text("#folderStatus") == "E-learning (3 video)", page4.inner_text("#folderStatus"))
+    check("Video trong thư mục con: đếm đủ 3 video, 3 tài liệu PDF", page4.inner_text("#folderStatus") == "E-learning (3 video · 3 tài liệu PDF)", page4.inner_text("#folderStatus"))
     check("Video trong thư mục con: không có lỗi", page4.locator(".verdict.ok").count() == 1, page4.inner_text("#check")[:300])
     page4.click("#exportBtn")
     page4.wait_for_selector("#exportState .verdict", timeout=60000)
@@ -331,6 +332,26 @@ with sync_playwright() as p:
     dl.value.save_as(nested_zip)
     same_as_cli(nested_zip, nested, "Video trong thư mục con")
     page4.close()
+
+    # ---- Excel ghi tên file không có đuôi (Windows ẩn đuôi file), 1 file đuôi .pdf nhưng không phải PDF
+    noext = os.path.join(tmp, "Khong duoi")
+    shutil.copytree(nested, noext)
+    os.remove(os.path.join(noext, "~$ATLD-DEMO.xlsx"))
+    wb = load_workbook(os.path.join(noext, "ATLD-DEMO.xlsx"))
+    wb["Video"]["C3"] = "01_vi-sao-an-toan"
+    wb["Video"]["D3"] = "slide-bai-1"
+    wb["Video"]["D5"] = "slide-bai-3; checklist-moi-nguy"
+    wb.save(os.path.join(noext, "ATLD-DEMO.xlsx"))
+    with open(os.path.join(noext, "05. ATLD", "checklist-moi-nguy.pdf"), "wb") as f:
+        f.write(b"PK\x03\x04 day la file pptx doi ten")
+    page5 = b.new_page(viewport={"width": 1366, "height": 768})
+    load_demo(page5, folder=noext)
+    errs = page5.locator("#check .errors li").all_inner_texts()
+    check("Tên không có đuôi: tự tìm .mp4/.pdf, chỉ báo file .pdf giả",
+          errs == ["Tài liệu '05. ATLD/checklist-moi-nguy.pdf' có đuôi .pdf nhưng không phải file PDF thật. Hãy mở file gốc và xuất lại sang PDF"], errs)
+    docs_col = page5.locator("#check table tbody tr td:nth-child(6)").all_inner_texts()
+    check("Tên không có đuôi: cột Tài liệu ghi tên đầy đủ", docs_col == ["slide-bai-1.pdf", "–", "slide-bai-3.pdf\nchecklist-moi-nguy.pdf"], docs_col)
+    page5.close()
 
     # ---- Khóa giả lập ~1,5 GB: ghi streaming, RAM không tăng theo dung lượng
     if os.environ.get("LARGE"):
