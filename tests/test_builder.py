@@ -6,7 +6,7 @@ Chuẩn bị (từ gốc repo):
   python3 tests/test_builder.py
 
 Gói Builder xuất cho khóa demo được lưu ở out/test-builder/SCORM_ATLD-DEMO.zip;
-giải nén vào out/test/course rồi chạy tests/test_player.py để kiểm tra 26/26 trên gói này.
+giải nén vào out/test/course rồi chạy tests/test_player.py để kiểm tra toàn bộ test Player trên gói này.
 
 Biến môi trường:
   CHROME_PATH  (tùy chọn) dùng Chrome cài sẵn thay vì Chromium của Playwright
@@ -132,6 +132,8 @@ with sync_playwright() as p:
     nums = dict(re.findall(r"(Số video|Câu pop-up|Câu ngân hàng đề)\n(\d+)", s))
     check("Tóm tắt: 3 video · 4 pop-up · 6 câu", nums == {"Số video": "3", "Câu pop-up": "4", "Câu ngân hàng đề": "6"}, nums)
     check("Tóm tắt: luật thi", "Đạt từ 80% · 3 lượt · 5 câu mỗi lần (rút từ 6) · 10 phút" in s, s)
+    docs_col = page.locator("#check table tbody tr td:nth-child(6)").all_inner_texts()
+    check("Bảng kiểm tra: cột Tài liệu theo từng video", docs_col == ["slide-bai-1.pdf", "–", "slide-bai-3.pdf\nchecklist-moi-nguy.pdf"], docs_col)
     check("Cảnh báo pop-up cách nhau < 1 phút", "chỉ cách pop-up 00:15" in page.inner_text("#check"))
     check("Bước 3 (kiểm tra) đánh dấu xong", "done" in page.get_attribute("#step3", "class"))
     page.screenshot(path=SHOTS + "1_demo_ok.png", full_page=True)
@@ -198,6 +200,10 @@ with sync_playwright() as p:
     check("Xem thử: chặn tua tới", fr.evaluate("document.getElementById('vid').currentTime") < 2, fr.evaluate("document.getElementById('vid').currentTime"))
     fr.evaluate("document.getElementById('vid').playbackRate = 4")
     time.sleep(0.3)
+    fr.click("#docBtn")
+    fr.wait_for_selector("#docPages canvas", timeout=20000)
+    check("Xem thử: mở được tài liệu PDF (từ máy người dùng)", fr.inner_text("#docPage") == "Trang 1/5", fr.inner_text("#docPage"))
+    fr.click("#docClose")
     check("Xem thử: tốc độ tối đa 2x", fr.evaluate("document.getElementById('vid').playbackRate") == 2)
     fr.evaluate("() => { const v = document.getElementById('vid'); v.playbackRate = 2; v.play(); }")
     fr.wait_for_selector("#pop.show", timeout=20000)
@@ -244,6 +250,7 @@ with sync_playwright() as p:
     for sub, name in (("10. Tong ket", "03_nhan-dien-moi-nguy.mp4"), ("2. Bao ho", "02_bao-ho-ca-nhan.mp4"), ("1. Mo dau", "01_vi-sao-an-toan.mp4")):
         os.makedirs(os.path.join(no_excel, sub))
         shutil.copy(os.path.join(DEMO, "videos", name), os.path.join(no_excel, sub, name))
+    shutil.copytree(os.path.join(DEMO, "docs"), os.path.join(no_excel, "Tai lieu"))
     fake_folder(page5, no_excel)
     page5.wait_for_selector("#pvSelect", timeout=30000)
     check("Chưa có Excel: báo chưa có file, kèm link Excel mẫu", "Chưa có file Excel" in page5.inner_text("#check") and page5.locator("#check a[download]").count() == 1, page5.inner_text("#check"))
@@ -305,6 +312,8 @@ with sync_playwright() as p:
         os.makedirs(os.path.join(nested, sub))
         shutil.copy(os.path.join(DEMO, "videos", name), os.path.join(nested, sub, name))
     shutil.copy(os.path.join(DEMO, "ATLD-DEMO.xlsx"), os.path.join(nested, "ATLD-DEMO.xlsx"))
+    for sub, name in (("01. Tong quan", "slide-bai-1.pdf"), ("05. ATLD", "slide-bai-3.pdf"), ("05. ATLD", "checklist-moi-nguy.pdf")):
+        shutil.copy(os.path.join(DEMO, "docs", name), os.path.join(nested, sub, name))
     open(os.path.join(nested, "~$ATLD-DEMO.xlsx"), "wb").close()  # file khóa Excel tạo ra khi đang mở file
     page4 = b.new_page(viewport={"width": 1366, "height": 768})
     page4.add_init_script(SAVE_STUB)

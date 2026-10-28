@@ -127,3 +127,31 @@ button:disabled { cursor: default; opacity: .45; }
   .hdr .ttl small { display: none; }
   .overlay { position: fixed; }
 }
+
+/* ---------- Tài liệu PDF: xem song song với video ---------- */
+.lesson.with-doc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.doc { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;
+  height: calc(100vh - 40px); min-height: 420px; position: sticky; top: 12px; background: #e9edf3; }
+.doc[hidden] { display: none; }
+.doc-bar { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #fff; border-bottom: 1px solid var(--line); font-size: 13px; }
+.doc-bar select { flex: 1; min-width: 0; font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.doc-title { flex: 1; min-width: 0; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-page { color: var(--gray2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.doc-zoom { display: flex; gap: 4px; }
+.doc-bar button { border: 1px solid var(--line); background: #fff; color: var(--navy); border-radius: 6px; min-width: 30px; height: 30px; font-weight: 700; padding: 0 8px; }
+.doc-pages { position: relative; flex: 1; overflow: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
+.doc-sheet { margin: 0 auto 10px; background: #fff; box-shadow: 0 1px 4px rgba(22,49,94,.18); -webkit-user-select: none; user-select: none; }
+.doc-sheet canvas { display: block; width: 100%; height: 100%; }
+.doc-msg { text-align: center; color: var(--gray2); font-size: 14px; padding: 30px 10px; margin: 0; }
+/* Mở tài liệu: mục lục thu thành nút bấm để video và tài liệu rộng hơn */
+.layout.doc-open { grid-template-columns: 1fr; max-width: 1600px; }
+.layout.doc-open .toc { position: static; max-height: none; padding: 0; }
+.layout.doc-open .toc-toggle { display: flex; width: 100%; justify-content: space-between; align-items: center; background: none; border: 0; padding: 12px 14px; color: var(--navy); font-weight: 600; }
+.layout.doc-open .toc .toc-body { display: none; padding: 0 8px 8px; }
+.layout.doc-open .toc.open .toc-body { display: block; }
+.layout.doc-open .toc h3 { display: none; }
+@media (max-width: 860px) {
+  .lesson.with-doc { grid-template-columns: 1fr; }
+  .doc { position: static; height: 70vh; min-height: 320px; }
+}
+@media print { .doc { display: none !important; } }

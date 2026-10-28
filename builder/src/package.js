@@ -37,7 +37,7 @@ ${fileTags}
 
 /**
  * course:      course từ readCourse()
- * files:       [{ zipPath, file }] video + logo từ readCourse()
+ * files:       [{ zipPath, file }] video, tài liệu, logo từ readCourse()
  * playerFiles: [{ path, data: Uint8Array }] toàn bộ player/ (trừ course.js)
  * sink:        nơi ghi (xem ZipWriter)
  * onProgress:  (bytesĐãGhi, tổngBytes) => void
@@ -49,7 +49,9 @@ export async function writePackage({ course, files, playerFiles, sink, onProgres
   const zip = new ZipWriter(sink, (n) => { done += n; onProgress(done, total); });
 
   const names = [];
-  for (const p of playerFiles) {
+  // Trình xem PDF (pdfjs/) chỉ cần khi khóa có tài liệu (giống build_scorm.py)
+  const hasDocs = course.videos.some((v) => v.docs && v.docs.length);
+  for (const p of playerFiles.filter((p) => hasDocs || !p.path.startsWith("pdfjs/"))) {
     await zip.addBytes(p.path, p.data);
     names.push(p.path);
   }

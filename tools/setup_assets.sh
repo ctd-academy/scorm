@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Tái tạo các file không lưu trong git: font Lexend Deca, file Excel mẫu, 3 video demo.
+# Tái tạo font Lexend Deca, file Excel mẫu, 3 video demo, 3 PDF demo (đều đã có trong git; chạy lại khi cần sửa).
 # Cần: node/npm, python3 + openpyxl, ffmpeg.
 # Chạy từ thư mục gốc repo:  bash tools/setup_assets.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-echo "1/3 Font Lexend Deca -> player/fonts/"
+echo "1/4 Font Lexend Deca -> player/fonts/"
 mkdir -p player/fonts
 TMP="$(mktemp -d)"
 ( cd "$TMP" && npm pack @fontsource/lexend-deca@5 --silent >/dev/null && tar xzf fontsource-lexend-deca-*.tgz )
@@ -15,10 +15,10 @@ for w in 400 600 700; do for s in latin latin-ext vietnamese; do
 done; done
 rm -rf "$TMP"
 
-echo "2/3 Template Excel -> templates/Mau_nhap_lieu_khoa_hoc.xlsx (trống) + demo-course/ATLD-DEMO.xlsx (khóa demo)"
+echo "2/4 Template Excel -> templates/Mau_nhap_lieu_khoa_hoc.xlsx (trống) + demo-course/ATLD-DEMO.xlsx (khóa demo)"
 python3 tools/make_template.py
 
-echo "3/3 Video demo -> demo-course/videos/"
+echo "3/4 Video demo -> demo-course/videos/"
 mkdir -p demo-course/videos
 FONT="$(fc-list : file | grep -i 'DejaVuSans-Bold.ttf' | head -1 | tr -d ': ')"
 make_video () { # $1 = tên file, $2 = tiêu đề
@@ -32,5 +32,8 @@ make_video () { # $1 = tên file, $2 = tiêu đề
 make_video 01_vi-sao-an-toan.mp4     "Bài 1 - Vì sao an toàn là trên hết"
 make_video 02_bao-ho-ca-nhan.mp4     "Bài 2 - Trang bị bảo hộ cá nhân"
 make_video 03_nhan-dien-moi-nguy.mp4 "Bài 3 - Nhận diện mối nguy"
+
+echo "4/4 PDF demo -> demo-course/docs/ (cần playwright)"
+python3 tools/make_demo_docs.py
 
 echo "Xong. Thử đóng gói: python3 tools/build_scorm.py demo-course/ATLD-DEMO.xlsx demo-course out"

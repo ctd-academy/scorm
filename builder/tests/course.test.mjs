@@ -135,7 +135,43 @@ test("video nằm trong thư mục con bất kỳ (như thư mục khóa Hội n
   const { course, errors, files } = readCourse(sheets, folder);
   assert.deepEqual(errors, []);
   assert.deepEqual(course.videos.map((v) => v.src), ["videos/01_vi-sao-an-toan.mp4", "videos/02_bao-ho-ca-nhan.mp4", "videos/03_nhan-dien-moi-nguy.mp4"]);
-  assert.deepEqual(files.map((f) => f.path), ["01. Tong quan/01_vi-sao-an-toan.mp4", "02. Chinh sach/02_bao-ho-ca-nhan.mp4", "03. ATLD/03_nhan-dien-moi-nguy.mp4"]);
+  assert.deepEqual(files.filter((f) => f.zipPath.startsWith("videos/")).map((f) => f.path), ["01. Tong quan/01_vi-sao-an-toan.mp4", "02. Chinh sach/02_bao-ho-ca-nhan.mp4", "03. ATLD/03_nhan-dien-moi-nguy.mp4"]);
+});
+
+test("tài liệu PDF: đọc theo từng video, nhiều file cách nhau bằng ;, tìm ở mọi thư mục con", () => {
+  const { sheets } = demo();
+  const folder = folderOf(DEMO).map((f) => (f.name === "slide-bai-3.pdf" ? { ...f, path: "03. ATLD/slide-bai-3.pdf" } : f));
+  const { course, errors, files } = readCourse(sheets, folder);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(course.videos.map((v) => v.docs), [
+    [{ title: "slide-bai-1", src: "docs/slide-bai-1.pdf" }],
+    undefined,
+    [{ title: "slide-bai-3", src: "docs/slide-bai-3.pdf" }, { title: "checklist-moi-nguy", src: "docs/checklist-moi-nguy.pdf" }],
+  ]);
+  assert.equal(files.find((f) => f.zipPath === "docs/slide-bai-3.pdf").path, "03. ATLD/slide-bai-3.pdf");
+});
+
+test("tài liệu PDF: sai tên, không phải PDF, dùng chung cho 2 video, Excel mẫu cũ (cột Ghi chú)", () => {
+  const { sheets, folder } = demo();
+  const V = sheets["Video"];
+  V[3][4] = "slide-bai1.pdf";
+  V[4][4] = "slide.pptx";
+  V[5][4] = "slide-bai-1.pdf";
+  let r = readCourse(sheets, folder);
+  assert.deepEqual(r.errors, [
+    "Sheet Video, dòng 3: không tìm thấy tài liệu 'slide-bai1.pdf' trong thư mục bạn chọn. Có phải ý bạn là 'slide-bai-1.pdf'?",
+    "Sheet Video, dòng 4: tài liệu 'slide.pptx' không phải file PDF. Hãy xuất sang PDF (trong PowerPoint: File > Save As > PDF)",
+  ]);
+  V[3][4] = V[5][4] = "slide-bai-1.pdf";
+  V[4][4] = "";
+  r = readCourse(sheets, folder);
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.files.filter((f) => f.zipPath === "docs/slide-bai-1.pdf").length, 1, "dùng chung: chỉ đóng gói 1 lần");
+  V[1][4] = "Ghi chú";
+  V[3][4] = "nhớ nói chậm";
+  r = readCourse(sheets, folder);
+  assert.deepEqual(r.errors, []);
+  assert.ok(r.course.videos.every((v) => !v.docs));
 });
 
 test("2 video trùng tên ở 2 thư mục: báo lỗi, ghi rõ thư mục thì hết lỗi", () => {

@@ -242,8 +242,9 @@ function render({ course, errors, warnings, files, totalSize }, folder) {
     <div class="wide" style="grid-column: span 4"><small>Luật bài kiểm tra</small><b>${esc(exam)}</b></div>
   </div>`;
   if (course.videos.length) {
-    html += `<table><thead><tr><th>#</th><th>Tên bài</th><th>File video</th><th>Thời lượng</th><th>Pop-up</th></tr></thead><tbody>${course.videos
-      .map((v, i) => `<tr><td>${i + 1}</td><td>${esc(v.title)}</td><td>${esc(v.src.slice(7))}</td><td>${v.duration ? formatDuration(v.duration) : "–"}</td><td>${popupsOf(i)}</td></tr>`)
+    const docsOf = (v) => (v.docs || []).map((d) => esc(d.src.slice(5))).join("<br>") || "–";
+    html += `<table><thead><tr><th>#</th><th>Tên bài</th><th>File video</th><th>Thời lượng</th><th>Pop-up</th><th>Tài liệu</th></tr></thead><tbody>${course.videos
+      .map((v, i) => `<tr><td>${i + 1}</td><td>${esc(v.title)}</td><td>${esc(v.src.slice(7))}</td><td>${v.duration ? formatDuration(v.duration) : "–"}</td><td>${popupsOf(i)}</td><td>${docsOf(v)}</td></tr>`)
       .join("")}</tbody></table>`;
   }
   showCheck(html);

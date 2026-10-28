@@ -83,6 +83,7 @@
 - **Lượt thi được tính ngay khi bấm "Bắt đầu"** (chặn mở đề rồi thoát); học viên được báo trước
 - Khóa không có câu hỏi cuối khóa → hoàn thành khi xem hết video
 - Chế độ "Xem thử" khi mở ngoài LMS, có nút xóa tiến độ
+- **Tài liệu PDF theo từng video** (không bắt buộc, thường là slide): nút "📄 Tài liệu" mở cột bên phải video, **video vẫn chạy** để xem song song; điện thoại thì nằm dưới video. Vẽ bằng PDF.js nên không có nút tải/in và chạy được trên iPhone. Ẩn khi làm bài thi. Không in tên học viên (Alex chốt). Chấp nhận rủi ro người rành máy tải được file PDF
 
 **Dữ liệu gửi về Workday (SCORM 1.2):**
 
@@ -94,7 +95,7 @@
 | `cmi.suspend_data` | JSON gọn: `{v:[[đã xem xa nhất, vị trí, xong]], p:[id pop-up đã đúng], a:số lượt, s:điểm cao nhất, q:0/1/2}` (giới hạn 4.096 ký tự) |
 | `cmi.core.session_time`, `cmi.core.exit` | exit = "suspend" khi chưa xong, rỗng khi đạt/hết lượt |
 
-**Đã kiểm tra:** 26/26 tình huống tự động trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud**: ổn.
+**Đã kiểm tra:** 43/43 tình huống tự động (26 luật học + 17 tài liệu PDF) trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud**: ổn.
 
 **Phát hiện khi test:** tua lại video chỉ đúng khi máy chủ hỗ trợ tải từng phần (HTTP Range). Workday và SCORM Cloud thuộc loại này.
 
@@ -106,7 +107,7 @@ Mỗi khóa = 1 file Excel chép từ **template chuẩn, trống** `templates/M
 |---|---|
 | Hướng dẫn | Cách dùng, luật chơi cố định, quy ước nhập câu hỏi |
 | Thông tin khóa | Mã khóa, Tên khóa, Mô tả ngắn, Điểm đạt (%), Số lượt làm bài, Số câu mỗi lần thi (0 = tất cả), Thời gian làm bài (phút, 0 = không giới hạn), Hiện đáp án (Có/Không), Nội dung liên hệ khi hết lượt, File logo. Có ô tự đếm và cảnh báo |
-| Video | STT · Tên bài · Tên file video · Ghi chú |
+| Video | STT · Tên bài · Tên file video · Tài liệu PDF (tùy chọn, nhiều file cách nhau `;`) |
 | Câu hỏi | Loại (POPUP / CUOI KHOA) · Video số · Mốc thời gian (mm:ss, Text) · Câu hỏi · A · B · C · D · Đáp án đúng · Giải thích |
 
 ## 7. Builder web v1
@@ -146,6 +147,7 @@ Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư m�
 - Workday không chặn được lần làm thứ 4 (rủi ro lớn nhất)
 - Xuất file lớn trên trình duyệt
 - App Workday mobile với SCORM
+- Trình xem PDF nạp bằng `import()` + Web Worker: cần thử trên SCORM Cloud / Workday sandbox (chính sách bảo mật CSP của LMS có thể chặn)
 - Phụ thuộc người giữ công cụ → repo và host thuộc tài khoản team, có hướng dẫn, giao 1 trainer làm đầu mối
 
 ## 11. Bước tiếp theo

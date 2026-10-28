@@ -10,6 +10,7 @@ const VIDEO_EXT = /\.(mp4|m4v|mov|webm|avi|mkv|wmv|flv|mpe?g)$/i;
 export const SIZE_WARN = 3.5 * 1024 ** 3; // Workday giới hạn 4 GB mỗi gói
 const SIZE_LIMIT = 4 * 1024 ** 3 - 64 * 1024 ** 2; // chừa chỗ cho Player + header zip
 const POPUP_GAP = 60;
+const DOC_WARN = 50 * 1024 ** 2; // tài liệu nặng quá thì học viên mở chậm
 
 export function cell(v) {
   if (v === undefined || v === null) return "";
@@ -164,6 +165,9 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
   const videoRows = [];
   const used = new Set();
   const vrows = sheets[SHEETS.video];
+  // Cột D là tài liệu PDF khi tiêu đề cột bắt đầu bằng "Tài liệu" (file Excel mẫu cũ ghi "Ghi chú": bỏ qua)
+  const hasDocs = cell((vrows[1] || [])[4]).toLowerCase().startsWith("tài liệu");
+  const docFiles = new Map(); // zipPath -> file: cùng 1 tài liệu cho nhiều video chỉ đóng gói 1 lần
   for (let r = 2; r < vrows.length; r++) {
     const row = vrows[r];
     if (!row || !cell(row[3]) || cell(row[1]).startsWith("(Ví dụ)")) continue;
@@ -182,7 +186,28 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
       if (durations && durations.has(src.path) && !durations.get(src.path))
         errors.push(at(SHEETS.video, r, `trình duyệt không mở được video '${fname}'. Hãy xuất lại video dạng .mp4 (H.264)`));
     }
-    videos.push({ title: cell(row[2]) || `Bài ${videos.length + 1}`, file: fname, src });
+    const docs = [];
+    for (const raw of hasDocs ? cell(row[4]).split(/[;\n]/) : []) {
+      const d = raw.trim().replace(/\\/g, "/");
+      if (!d) continue;
+      const found = findFile(d);
+      if (!/\.pdf$/i.test(d)) errors.push(at(SHEETS.video, r, `tài liệu '${d}' không phải file PDF. Hãy xuất sang PDF (trong PowerPoint: File > Save As > PDF)`));
+      else if (found.dup) errors.push(at(SHEETS.video, r, dupMsg(d, found.dup)));
+      else if (!found.entry) {
+        const pdfs = folder.filter((f) => /\.pdf$/i.test(f.name));
+        const hint = similar(d.split("/").pop(), pdfs.map((f) => f.name));
+        errors.push(at(SHEETS.video, r, `không tìm thấy tài liệu '${d}' trong thư mục bạn chọn` + (hint ? `. Có phải ý bạn là '${hint}'?` : "")));
+      } else {
+        if (!docFiles.has("docs/" + d)) {
+          docFiles.set("docs/" + d, found.entry);
+          files.push({ zipPath: "docs/" + d, path: found.entry.path, file: found.entry.file });
+          if (found.entry.size > DOC_WARN)
+            warnings.push(at(SHEETS.video, r, `tài liệu '${d}' nặng ${(found.entry.size / 1024 ** 2).toFixed(0)} MB, học viên sẽ mở chậm. Nên nén PDF dưới 50 MB`));
+        }
+      }
+      docs.push({ title: d.split("/").pop().replace(/\.pdf$/i, ""), src: "docs/" + d });
+    }
+    videos.push({ title: cell(row[2]) || `Bài ${videos.length + 1}`, file: fname, src, docs });
     videoRows.push(r);
   }
   if (!videos.length && !errors.some((e) => e.includes(SHEETS.video)))
@@ -260,7 +285,7 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
     description: cell(info["Mô tả ngắn"]),
     logo: logoSrc ? "assets/" + logo : null,
     settings,
-    videos: videos.map((v) => ({ title: v.title, src: "videos/" + v.file, duration: duration(v) })),
+    videos: videos.map((v) => ({ title: v.title, src: "videos/" + v.file, duration: duration(v), ...(v.docs.length ? { docs: v.docs } : {}) })),
     popups,
     quiz,
   };

@@ -5,7 +5,7 @@
 /**
  * el:      phần tử chứa bước 4
  * course:  course từ readCourse()
- * urls:    Map zipPath -> Blob URL (video, logo)
+ * urls:    Map zipPath -> Blob URL (video, tài liệu, logo)
  */
 export function renderPreviewStep(el, course, urls) {
   el.innerHTML = `<button class="btn" id="pvOpen">Mở xem thử</button>
@@ -13,7 +13,10 @@ export function renderPreviewStep(el, course, urls) {
     <div id="pvFrameWrap"></div>`;
   el.querySelector("#pvOpen").onclick = () => {
     const c = structuredClone(course);
-    c.videos.forEach((v) => (v.src = urls.get(v.src) || v.src));
+    c.videos.forEach((v) => {
+      v.src = urls.get(v.src) || v.src;
+      (v.docs || []).forEach((d) => (d.src = urls.get(d.src) || d.src));
+    });
     if (c.logo) c.logo = urls.get(c.logo) || null;
     window.__previewCourse = c;
     // mỗi lần mở là học từ đầu (LMS giả lập lưu tiến độ trong trình duyệt)

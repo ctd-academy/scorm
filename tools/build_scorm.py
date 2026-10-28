@@ -98,8 +98,10 @@ def read_excel(path, course_dir):
             errors.append(f"Không tìm thấy file logo '{logo}'" + (f" (trùng tên: {', '.join(dup)})" if dup else ""))
         logo = logo.replace("\\", "/").split("/")[-1]
 
-    # Video: dòng 2 là ví dụ, bỏ qua nếu cột STT ghi "(Ví dụ)"
+    # Video: dòng 2 là ví dụ, bỏ qua nếu cột STT ghi "(Ví dụ)".
+    # Cột D là tài liệu PDF khi tiêu đề cột bắt đầu bằng "Tài liệu" (file Excel mẫu cũ ghi "Ghi chú": bỏ qua)
     videos = []
+    has_docs = cell(wb["Video"]["D1"].value).lower().startswith("tài liệu")
     for r, row in enumerate(wb["Video"].iter_rows(min_row=2, values_only=True), 2):
         if not row or not cell(row[2]) or cell(row[0]).startswith("(Ví dụ)"):
             continue
@@ -109,7 +111,20 @@ def read_excel(path, course_dir):
             errors.append(f"Video dòng {r}: có nhiều file tên '{fname}': {', '.join(dup)}. Hãy ghi rõ thư mục")
         elif not src:
             errors.append(f"Video dòng {r}: không tìm thấy file '{fname}'")
-        videos.append({"title": cell(row[1]) or f"Bài {len(videos)+1}", "file": fname, "path": src})
+        docs = []
+        for d in (re.split(r"[;\n]", cell(row[3])) if has_docs and len(row) > 3 else []):
+            d = d.strip().replace("\\", "/")
+            if not d:
+                continue
+            dsrc, ddup = find_file(course_dir, d)
+            if not d.lower().endswith(".pdf"):
+                errors.append(f"Video dòng {r}: tài liệu '{d}' không phải file PDF")
+            elif ddup:
+                errors.append(f"Video dòng {r}: có nhiều file tên '{d}': {', '.join(ddup)}. Hãy ghi rõ thư mục")
+            elif not dsrc:
+                errors.append(f"Video dòng {r}: không tìm thấy tài liệu '{d}'")
+            docs.append({"title": re.sub(r"\.pdf$", "", d.split("/")[-1], flags=re.I), "src": "docs/" + d, "path": dsrc})
+        videos.append({"title": cell(row[1]) or f"Bài {len(videos)+1}", "file": fname, "path": src, "docs": docs})
 
     popups, quiz = [], []
     for r, row in enumerate(wb["Câu hỏi"].iter_rows(min_row=2, values_only=True), 2):
@@ -157,13 +172,20 @@ def read_excel(path, course_dir):
         "description": cell(info.get("Mô tả ngắn")),
         "logo": ("assets/" + logo) if logo else None,
         "settings": settings,
-        "videos": [{"title": v["title"], "src": "videos/" + v["file"],
-                    "duration": video_duration(v["path"])} for v in videos],
+        "videos": [dict({"title": v["title"], "src": "videos/" + v["file"],
+                         "duration": video_duration(v["path"])},
+                        **({"docs": [{"title": d["title"], "src": d["src"]} for d in v["docs"]]} if v["docs"] else {}))
+                   for v in videos],
         "popups": popups,
         "quiz": quiz,
     }
-    sources = {"videos": [v["path"] for v in videos], "logo": logo_src}
+    sources = {"videos": [v["path"] for v in videos], "logo": logo_src,
+               "docs": {d["src"]: d["path"] for v in videos for d in v["docs"]}}
     return course, logo, errors, sources
+
+
+def sources_docs(course):
+    return {d["src"] for v in course["videos"] for d in v.get("docs", [])}
 
 
 def manifest(course, files):
@@ -207,12 +229,17 @@ def build(xlsx, course_dir, out_dir):
         for n in sorted(names):
             if n == "course.js":
                 continue
+            # Trình xem PDF (pdfjs/) chỉ cần khi khóa có tài liệu
+            if not sources["docs"] and os.path.relpath(root, PLAYER).replace(os.sep, "/").split("/")[0] == "pdfjs":
+                continue
             full = os.path.join(root, n)
             entries.append((os.path.relpath(full, PLAYER).replace(os.sep, "/"), full))
     js = "window.COURSE = " + json.dumps(course, ensure_ascii=False, indent=1) + ";\n"
     entries.append(("course.js", js.encode("utf-8")))
     for v, src in zip(course["videos"], sources["videos"]):
         entries.append((v["src"], src))
+    for name, src in sources["docs"].items():  # cùng 1 file dùng cho nhiều video: chỉ đóng 1 lần
+        entries.append((name, src))
     if logo:
         entries.append(("assets/" + logo, sources["logo"]))
     files = [e[0] for e in entries]
@@ -222,8 +249,8 @@ def build(xlsx, course_dir, out_dir):
     out = os.path.join(out_dir, f"SCORM_{course['id']}.zip")
     with zipfile.ZipFile(out, "w") as z:
         for name, src in entries:
-            # video đã nén sẵn -> lưu nguyên (STORED) cho nhanh; còn lại nén DEFLATED
-            ctype = zipfile.ZIP_STORED if name.endswith((".mp4", ".woff2", ".png", ".jpg")) else zipfile.ZIP_DEFLATED
+            # video, PDF đã nén sẵn -> lưu nguyên (STORED) cho nhanh; còn lại nén DEFLATED
+            ctype = zipfile.ZIP_STORED if name.endswith((".mp4", ".woff2", ".png", ".jpg", ".pdf")) else zipfile.ZIP_DEFLATED
             if isinstance(src, bytes):
                 z.writestr(zipfile.ZipInfo(name, (2026, 1, 1, 0, 0, 0)), src, compress_type=ctype)
             else:
@@ -231,7 +258,7 @@ def build(xlsx, course_dir, out_dir):
     size = os.path.getsize(out) / 1024 / 1024
     print(f"Đã xuất: {out} ({size:.1f} MB)")
     total = sum(v["duration"] for v in course["videos"])
-    print(f"  {len(course['videos'])} video · {len(course['popups'])} pop-up · {len(course['quiz'])} câu ngân hàng đề")
+    print(f"  {len(course['videos'])} video · {len(sources_docs(course))} tài liệu · {len(course['popups'])} pop-up · {len(course['quiz'])} câu ngân hàng đề")
     print(f"  Tổng thời lượng video: {total // 60} phút {total % 60} giây (dùng cho trường Total Course Duration trên Workday)")
     return out, course
 

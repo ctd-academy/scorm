@@ -75,8 +75,10 @@ Cấu trúc zip:
 ```
 index.html  player.css  player.js  scorm12.js     (từ player/)
 fonts/*.woff2                                     (từ player/fonts/)
+pdfjs/...                                         (từ player/pdfjs/, chỉ khi khóa có tài liệu)
 course.js                                         window.COURSE = {...};
 videos/<tên file gốc>
+docs/<tên file PDF ghi trong Excel>               (nếu có)
 assets/<logo>                                     (nếu có)
 imsmanifest.xml
 ```
@@ -87,7 +89,8 @@ window.COURSE = {
   id, title, description, logo: null | "assets/<file>",
   settings: { passScore, maxAttempts, questionsPerAttempt, timeLimitMinutes,
               showAnswers, maxSpeed: 2, contact },
-  videos: [{ title, src: "videos/<file>", duration /* giây, làm tròn */ }],
+  videos: [{ title, src: "videos/<file>", duration /* giây, làm tròn */,
+             docs /* chỉ có khi video có tài liệu */: [{ title /* tên file bỏ .pdf */, src: "docs/<file>" }] }],
   popups: [{ video /* từ 0 */, time /* giây */, q, options: [...], answer /* từ 0 */, explain }],
   quiz:   [{ q, options: [...], answer, explain }]
 };
@@ -97,7 +100,7 @@ window.COURSE = {
 
 Quy tắc đọc Excel: xem `read_excel()` trong `tools/build_scorm.py`. Dòng ví dụ (cột STT bắt đầu bằng "(Ví dụ)" ở sheet Video, hoặc câu hỏi bắt đầu bằng "(Ví dụ)") bị bỏ qua.
 
-**Test tương đương (bắt buộc):** script so sánh zip của Builder với zip của `build_scorm.py` cho khóa demo: cùng danh sách file, `course.js` parse ra cùng JSON (bỏ qua khác biệt duration ±1 giây), manifest parse được. Sau đó giải nén gói của Builder và chạy `tests/test_player.py` phải đạt 26/26.
+**Test tương đương (bắt buộc):** script so sánh zip của Builder với zip của `build_scorm.py` cho khóa demo: cùng danh sách file, `course.js` parse ra cùng JSON (bỏ qua khác biệt duration ±1 giây), manifest parse được. Sau đó giải nén gói của Builder và chạy `tests/test_player.py` phải đạt hết (43/43).
 
 ## 5. Giao diện
 
@@ -118,9 +121,10 @@ Quy tắc đọc Excel: xem `read_excel()` trong `tools/build_scorm.py`. Dòng v
 | Mốc | Nội dung | Nghiệm thu |
 |---|---|---|
 | M1 ✅ | Khung Vite, copy Player, đọc Excel + thư mục video, màn hình kiểm tra lỗi | Khóa demo hiện đúng tóm tắt; cố tình làm sai 5 loại lỗi thì báo đúng dòng |
-| M2 ✅ | Xuất zip streaming + thông tin Workday | Test tương đương với `build_scorm.py` đạt; 26/26 test Player đạt trên gói của Builder; xuất được khóa giả lập 1,5 GB không treo máy |
+| M2 ✅ | Xuất zip streaming + thông tin Workday | Test tương đương với `build_scorm.py` đạt; toàn bộ test Player đạt trên gói của Builder; xuất được khóa giả lập 1,5 GB không treo máy |
 | M3 ✅ | Xem thử + đặt pop-up | Xem thử chạy đúng luật chơi; mốc đặt bằng nút khớp với giây trên video demo |
 | M3.1 ✅ | Luồng mới: chọn thư mục 1 lần, tự tìm Excel, Kiểm tra lại; đặt pop-up trước kiểm tra | Đặt pop-up được khi chưa có Excel; sửa Excel rồi Kiểm tra lại đọc bản mới mà không chọn lại |
+| M3.2 ✅ | Tài liệu PDF theo từng video (cột D sheet Video), xem song song với video bằng PDF.js | Kiểm tra báo sai tên/không phải PDF; xem thử mở được PDF; gói tương đương `build_scorm.py`; 43/43 test Player |
 | M4 | Deploy + hướng dẫn 1 trang | Link chạy trên Chrome/Edge (Windows và Mac); `docs/HUONG_DAN_TRAINER.md` ≤ 1 trang |
 
 ## 8. Việc Alex cần cung cấp
