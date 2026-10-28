@@ -1,0 +1,182 @@
+{
+ "_": "Gói mẫu của khóa demo (lấy từ tools/build_scorm.py cũ ngày 28/10/2026). Chỉ ghi file riêng của khóa; file Player lấy theo thư mục player/. Đổi Excel demo hoặc luật đọc Excel thì cập nhật file này.",
+ "files": [
+  "course.js",
+  "docs/checklist-moi-nguy.pdf",
+  "docs/slide-bai-1.pdf",
+  "docs/slide-bai-3.pdf",
+  "imsmanifest.xml",
+  "videos/01_vi-sao-an-toan.mp4",
+  "videos/02_bao-ho-ca-nhan.mp4",
+  "videos/03_nhan-dien-moi-nguy.mp4"
+ ],
+ "stored": [
+  "docs/checklist-moi-nguy.pdf",
+  "docs/slide-bai-1.pdf",
+  "docs/slide-bai-3.pdf",
+  "videos/01_vi-sao-an-toan.mp4",
+  "videos/02_bao-ho-ca-nhan.mp4",
+  "videos/03_nhan-dien-moi-nguy.mp4"
+ ],
+ "course": {
+  "id": "ATLD-DEMO",
+  "title": "An toàn lao động cơ bản (Demo)",
+  "description": "Khóa demo minh họa các tính năng của Coteccons SCORM Player. Nội dung chỉ mang tính minh họa.",
+  "logo": null,
+  "settings": {
+   "passScore": 80,
+   "maxAttempts": 3,
+   "questionsPerAttempt": 5,
+   "timeLimitMinutes": 10,
+   "showAnswers": true,
+   "maxSpeed": 2,
+   "contact": "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại."
+  },
+  "videos": [
+   {
+    "title": "Vì sao an toàn là trên hết",
+    "src": "videos/01_vi-sao-an-toan.mp4",
+    "duration": 55,
+    "docs": [
+     {
+      "title": "slide-bai-1",
+      "src": "docs/slide-bai-1.pdf"
+     }
+    ]
+   },
+   {
+    "title": "Trang bị bảo hộ cá nhân (PPE)",
+    "src": "videos/02_bao-ho-ca-nhan.mp4",
+    "duration": 55
+   },
+   {
+    "title": "Nhận diện mối nguy tại công trường",
+    "src": "videos/03_nhan-dien-moi-nguy.mp4",
+    "duration": 55,
+    "docs": [
+     {
+      "title": "slide-bai-3",
+      "src": "docs/slide-bai-3.pdf"
+     },
+     {
+      "title": "checklist-moi-nguy",
+      "src": "docs/checklist-moi-nguy.pdf"
+     }
+    ]
+   }
+  ],
+  "popups": [
+   {
+    "q": "Theo video, điều gì được đặt lên hàng đầu tại công trường?",
+    "options": [
+     "Tiến độ",
+     "An toàn",
+     "Chi phí"
+    ],
+    "answer": 1,
+    "explain": "An toàn luôn được ưu tiên trước tiến độ và chi phí.",
+    "video": 0,
+    "time": 15
+   },
+   {
+    "q": "Ai có trách nhiệm về an toàn tại công trường?",
+    "options": [
+     "Chỉ cán bộ an toàn",
+     "Chỉ chỉ huy trưởng",
+     "Tất cả mọi người"
+    ],
+    "answer": 2,
+    "explain": "An toàn là trách nhiệm của mỗi người.",
+    "video": 0,
+    "time": 40
+   },
+   {
+    "q": "Mũ bảo hộ cần được đội như thế nào?",
+    "options": [
+     "Đội lỏng cho thoải mái",
+     "Cài quai cằm chắc chắn",
+     "Chỉ đội khi có người kiểm tra"
+    ],
+    "answer": 1,
+    "explain": "",
+    "video": 1,
+    "time": 25
+   },
+   {
+    "q": "Khi phát hiện mối nguy, việc đầu tiên nên làm là gì?",
+    "options": [
+     "Tiếp tục làm việc",
+     "Báo ngay cho người phụ trách",
+     "Tự xử lý một mình"
+    ],
+    "answer": 1,
+    "explain": "",
+    "video": 2,
+    "time": 30
+   }
+  ],
+  "quiz": [
+   {
+    "q": "Mục đích chính của trang bị bảo hộ cá nhân là gì?",
+    "options": [
+     "Làm đẹp đồng phục",
+     "Giảm nguy cơ chấn thương",
+     "Thay thế biện pháp quản lý"
+    ],
+    "answer": 1,
+    "explain": "PPE là lớp bảo vệ cuối cùng, giúp giảm nguy cơ chấn thương."
+   },
+   {
+    "q": "Khi thấy đồng nghiệp không đội mũ bảo hộ, bạn nên làm gì?",
+    "options": [
+     "Im lặng",
+     "Nhắc nhở ngay",
+     "Chụp ảnh đăng mạng xã hội",
+     "Báo cáo sau một tuần"
+    ],
+    "answer": 1,
+    "explain": ""
+   },
+   {
+    "q": "Phát hiện dây điện bị hở trên lối đi, bạn nên làm gì trước tiên?",
+    "options": [
+     "Bước qua và đi tiếp",
+     "Rào chắn khu vực và báo người phụ trách",
+     "Tự nối lại dây điện"
+    ],
+    "answer": 1,
+    "explain": ""
+   },
+   {
+    "q": "An toàn lao động là trách nhiệm của ai?",
+    "options": [
+     "Riêng bộ phận an toàn",
+     "Riêng ban chỉ huy",
+     "Mọi người trên công trường"
+    ],
+    "answer": 2,
+    "explain": ""
+   },
+   {
+    "q": "Trước khi bắt đầu ca làm việc, bạn nên làm gì?",
+    "options": [
+     "Kiểm tra trang bị bảo hộ và khu vực làm việc",
+     "Bắt đầu ngay để kịp tiến độ",
+     "Chờ có người nhắc"
+    ],
+    "answer": 0,
+    "explain": ""
+   },
+   {
+    "q": "Khi không chắc chắn về quy trình an toàn của một công việc, bạn nên?",
+    "options": [
+     "Làm theo cách mình nghĩ",
+     "Hỏi người phụ trách trước khi làm",
+     "Bỏ qua bước không rõ"
+    ],
+    "answer": 1,
+    "explain": ""
+   }
+  ]
+ }
+}

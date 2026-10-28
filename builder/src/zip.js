@@ -27,7 +27,7 @@ export function crc32(data, crc = 0) {
   return ~c >>> 0;
 }
 
-// Giống build_scorm.py: file đã nén sẵn thì lưu nguyên (STORED), còn lại nén DEFLATE
+// File đã nén sẵn (video, font, ảnh, PDF) thì lưu nguyên (STORED), còn lại nén DEFLATE
 const STORED = /\.(mp4|m4v|mov|webm|avi|mkv|wmv|flv|mpe?g|woff2|png|jpg|pdf)$/i;
 export const isStored = (name) => STORED.test(name);
 

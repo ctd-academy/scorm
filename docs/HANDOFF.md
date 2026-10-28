@@ -1,7 +1,7 @@
 # HANDOFF – Dự án Coteccons SCORM Builder
 
-> Cập nhật: 27/10/2026 · Chủ dự án: Alex (L&OD Team Lead, Coteccons)
-> Bản này đi kèm repo. Spec Builder web: `docs/BUILDER_SPEC.md`. Hướng dẫn cho Claude Code: `CLAUDE.md`.
+> Cập nhật: 28/10/2026 · Chủ dự án: Alex (L&OD Team Lead, Coteccons)
+> Bản này đi kèm repo. Spec Builder web: `docs/BUILDER_SPEC.md`. Hướng dẫn cho người phát triển: `docs/DEV.md`. Hướng dẫn cho Claude Code: `CLAUDE.md`.
 
 **Ký hiệu trạng thái:** ✅ Đã chốt · 🟡 Đề xuất, chờ Alex chốt · ❓ Còn mở, cần hỏi Workday/IT
 
@@ -69,7 +69,8 @@
 | 15 | Code ở **GitHub tài khoản team** (`ctd-academy/scorm`); host trên **GitHub Pages** | ✅ |
 | 16 | **Không dùng Lovable** cho phần lõi; xây bằng Claude Code | ✅ |
 | 17 | IT chưa thấy chặn gì (27/10) | ✅ |
-| 18 | Logo mặc định trong Player: **logo Coteccons bản trắng** (`player/logo.png`); liên hệ khi hết lượt: **Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn** | ✅ |
+| 18 | Logo mặc định trong Player: **logo Coteccons bản trắng** (`player/logo.png`); liên hệ khi hết lượt: **Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn** (sửa ở `builder/src/defaults.json`) | ✅ |
+| 19 | **Một động cơ đóng gói** dùng chung cho website và dòng lệnh (`builder/scripts/build-scorm.mjs`); bỏ bản Python `build_scorm.py`. GitHub tự chạy toàn bộ test (logic, Player, giao diện) mỗi lần đổi code (28/10) | ✅ |
 
 ## 5. Đã xây xong: Player v1
 
@@ -112,7 +113,7 @@ Mỗi khóa = 1 file Excel chép từ **template chuẩn, trống** `templates/M
 
 ## 7. Builder web v1
 
-Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư mục khóa → đặt pop-up → kiểm tra → xem thử → xuất), xử lý hoàn toàn trên trình duyệt, đầu ra tương đương `tools/build_scorm.py`.
+Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư mục khóa → đặt pop-up → kiểm tra → xem thử → xuất), xử lý hoàn toàn trên trình duyệt. Cùng code đóng gói với lệnh `builder/scripts/build-scorm.mjs`.
 
 **Tiến độ:** M1 ✅ (chọn file, đọc Excel + thư mục video, màn hình kiểm tra lỗi) · M2 ✅ (xuất zip SCORM streaming, thông tin Workday; khóa 1,5 GB xuất trong ~30 giây, RAM tăng ~150 MB) · M3 ✅ (đặt pop-up bằng nút bấm, xem thử bằng Player thật; sau đó đổi luồng: chọn thư mục 1 lần, tự tìm Excel, nút Kiểm tra lại, đặt pop-up trước bước kiểm tra) · M4 hướng dẫn trainer. Deploy tự động lên GitHub Pages khi `main` thay đổi.
 
@@ -148,7 +149,7 @@ Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư m�
 - Xuất file lớn trên trình duyệt
 - App Workday mobile với SCORM
 - Trình xem PDF nạp bằng `import()` + Web Worker: cần thử trên SCORM Cloud / Workday sandbox (chính sách bảo mật CSP của LMS có thể chặn)
-- Phụ thuộc người giữ công cụ → repo và host thuộc tài khoản team, có hướng dẫn, giao 1 trainer làm đầu mối
+- Phụ thuộc người giữ công cụ → repo và host thuộc tài khoản team, có hướng dẫn cho người phát triển (`docs/DEV.md`), test tự động trên GitHub, giao 1 trainer làm đầu mối
 
 ## 11. Bước tiếp theo
 

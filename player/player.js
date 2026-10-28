@@ -24,7 +24,8 @@
     timeLimitMinutes: num(D.timeLimitMinutes, 0),
     showAnswers: !!D.showAnswers,
     maxSpeed: Math.min(2, num(D.maxSpeed, 2)),
-    contact: D.contact || "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại."
+    // course.js luôn có nội dung liên hệ (mặc định ở builder/src/defaults.json); câu dưới chỉ để phòng hờ
+    contact: D.contact || "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD để được hỗ trợ đăng ký lại."
   };
   var VIDEOS = C.videos || [];
   var POPUPS = (C.popups || []).map(function (p, i) { p.id = i; return p; });
