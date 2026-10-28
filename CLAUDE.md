@@ -40,4 +40,4 @@ Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&O
 
 ## Định nghĩa "xong" cho mỗi thay đổi
 
-Xem `docs/DEV.md` mục 9. Tóm tắt: `bash tests/run_all.sh` đạt hết (17 test logic, 43 test Player, 77 test giao diện); gói khóa demo khớp gói mẫu; thử trên Chrome và Edge.
+Xem `docs/DEV.md` mục 9. Tóm tắt: `bash tests/run_all.sh` đạt hết (19 test logic, 43 test Player, 80 test giao diện); gói khóa demo khớp gói mẫu; thử trên Chrome và Edge.

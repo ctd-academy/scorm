@@ -136,7 +136,9 @@ test("tài liệu PDF: đọc theo từng video, nhiều file cách nhau bằng 
 });
 
 test("tài liệu PDF: sai tên, không phải PDF, dùng chung cho 2 video, Excel mẫu cũ (cột Ghi chú)", () => {
-  const { sheets, folder } = demo();
+  const { sheets } = demo();
+  const pptx = { path: "slide.pptx", name: "slide.pptx", size: 1, file: { name: "slide.pptx", size: 1 } };
+  const folder = [...folderOf(DEMO), pptx];
   const V = sheets["Video"];
   V[3][4] = "slide-bai1.pdf";
   V[4][4] = "slide.pptx";
@@ -156,6 +158,28 @@ test("tài liệu PDF: sai tên, không phải PDF, dùng chung cho 2 video, Exc
   r = readCourse(sheets, folder);
   assert.deepEqual(r.errors, []);
   assert.ok(r.course.videos.every((v) => !v.docs));
+});
+
+test("ghi tên file không có đuôi (Windows ẩn đuôi file): tự thêm .pdf / .mp4", () => {
+  const { sheets, folder } = demo();
+  const V = sheets["Video"];
+  V[3][3] = "01_vi-sao-an-toan";
+  V[3][4] = "slide-bai-1";
+  V[5][4] = "Slide-Bai-3; checklist-moi-nguy.pdf";
+  const { course, errors, files } = readCourse(sheets, folder);
+  assert.deepEqual(errors, []);
+  assert.equal(course.videos[0].src, "videos/01_vi-sao-an-toan.mp4");
+  assert.deepEqual(course.videos[0].docs, [{ title: "slide-bai-1", src: "docs/slide-bai-1.pdf" }]);
+  assert.deepEqual(course.videos[2].docs.map((d) => d.title), ["Slide-Bai-3", "checklist-moi-nguy"]);
+  assert.ok(files.some((f) => f.zipPath === "docs/slide-bai-1.pdf" && f.path === "docs/slide-bai-1.pdf"));
+});
+
+test("tài liệu ghi file .pptx mà bên cạnh có bản PDF cùng tên: chỉ ra file PDF", () => {
+  const { sheets } = demo();
+  const pptx = { path: "docs/slide-bai-1.pptx", name: "slide-bai-1.pptx", size: 1, file: { name: "slide-bai-1.pptx", size: 1 } };
+  sheets["Video"][3][4] = "slide-bai-1.pptx";
+  const { errors } = readCourse(sheets, [...folderOf(DEMO), pptx]);
+  assert.deepEqual(errors, ["Sheet Video, dòng 3: tài liệu 'slide-bai-1.pptx' không phải file PDF. Trong thư mục có 'slide-bai-1.pdf': hãy ghi tên file này"]);
 });
 
 test("2 video trùng tên ở 2 thư mục: báo lỗi, ghi rõ thư mục thì hết lỗi", () => {
