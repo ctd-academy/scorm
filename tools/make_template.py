@@ -39,7 +39,7 @@ def make(demo, OUT):
   lines=[
   ("Cách dùng",""),
   ("1","Mỗi khóa học = 1 file Excel này. Đặt tên file theo mã khóa, ví dụ: ATLD-001.xlsx"),
-  ("Đóng gói","Điền xong, mở https://ctd-academy.github.io/scorm/ bằng Chrome hoặc Edge, chọn file Excel + thư mục video, bấm Xuất gói SCORM"),
+  ("Đóng gói","Điền xong, mở https://ctd-academy.github.io/scorm/ bằng Chrome hoặc Edge, chọn thư mục khóa (để file Excel này cùng thư mục với video). Thứ tự nên làm: điền Thông tin khóa + Video → đặt pop-up trên web, copy dán vào sheet Câu hỏi → viết câu hỏi → lưu, bấm Kiểm tra lại → Xuất gói SCORM"),
   ("2","Ô nền vàng nhạt là ô cần điền. Không đổi tên sheet, không đổi tiêu đề cột."),
   ("3","Sheet 'Thông tin khóa': thông tin chung và luật bài kiểm tra của khóa."),
   ("4","Sheet 'Video': mỗi dòng là 1 bài (1 video), theo đúng thứ tự học. Tên file phải trùng tên file video trong thư mục khóa."),

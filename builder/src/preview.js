@@ -29,5 +29,5 @@ export function renderPreviewStep(el, course, urls) {
 }
 
 export function closePreview(el) {
-  el.innerHTML = '<p class="note">Sửa hết lỗi ở bước 2 để xem thử.</p>';
+  el.innerHTML = '<p class="note">Sửa hết lỗi ở bước 3 để xem thử.</p>';
 }

@@ -32,13 +32,22 @@ Trình duyệt của trainer (Chrome/Edge)
 
 ## 3. Luồng sử dụng (màn hình)
 
-**Bước 1 – Chọn file**
-- Nút "Chọn file Excel khóa học" (.xlsx)
-- Nút "Chọn thư mục video": tìm video ở **mọi thư mục con** theo tên file ghi trong Excel (giống `find_file()` của `build_scorm.py`). Hai file trùng tên ở hai thư mục → báo lỗi, trainer ghi rõ thư mục, ví dụ `01. Tong quan/gioi-thieu.mp4`
+**Bước 1 – Chọn thư mục khóa**
+- Một nút "Chọn thư mục khóa" (chứa video và Excel). Chrome/Edge dùng `showDirectoryPicker()` để giữ quyền đọc thư mục: sửa Excel xong bấm **"Kiểm tra lại"** là đọc lại cả thư mục, không phải chọn lại. Trình duyệt khác dùng `<input webkitdirectory>`, nút đổi thành "Chọn lại thư mục".
+- **Tự tìm file Excel** trong thư mục (bỏ qua `~$…`). Nhiều file Excel: lấy file sửa gần nhất, hiện danh sách để đổi; lần kiểm tra sau giữ file đã chọn. Không có Excel: vẫn cho đặt pop-up, kèm link Excel mẫu. Link "Chọn file Excel khác" cho Excel nằm ngoài thư mục (`showOpenFilePicker` để cũng đọc lại được).
+- **Thanh trạng thái ở đầu bước 3 (Kiểm tra)**: tên file Excel · đọc lúc giờ:phút:giây · số lỗi · nút Kiểm tra lại. Cho trainer thấy Excel là bản nháp, sửa dần được.
+- Tìm video ở **mọi thư mục con** theo tên file ghi trong Excel (giống `find_file()` của `build_scorm.py`). Hai file trùng tên ở hai thư mục → báo lỗi, trainer ghi rõ thư mục, ví dụ `01. Tong quan/gioi-thieu.mp4`
 - Tùy chọn: chọn file logo
 - Có link tải **file Excel mẫu** (`templates/Mau_nhap_lieu_khoa_hoc.xlsx`)
 
-**Bước 2 – Kiểm tra**
+**Bước 2 – Đặt pop-up (tùy chọn)**
+- Đặt trước bước kiểm tra vì trainer cần xem video để biết đặt câu hỏi ở đâu; mở được cả khi Excel còn lỗi hoặc chưa có.
+- Chọn video → phát → bấm **"Đặt pop-up tại đây"** → điền mốc mm:ss vào danh sách.
+- Kết quả: bảng (Loại, Video số, Mốc thời gian) để **copy dán vào Excel**. Builder không sửa file Excel của người dùng.
+- Excel chưa có danh sách video (hoặc chưa có Excel): xếp video theo thứ tự thư mục (so số tự nhiên: 2 trước 10) và có nút **"Copy danh sách video"** (STT, Tên bài, Tên file) để dán vào sheet Video ô A3.
+- Mốc lưu theo file video, không theo số thứ tự: đổi thứ tự bài trong Excel rồi kiểm tra lại thì "Video số" tự đổi theo. Kiểm tra lại không làm mất mốc và giữ video, vị trí đang xem.
+
+**Bước 3 – Kiểm tra**
 - Tóm tắt: tên khóa, mã khóa, số video, tổng thời lượng, số pop-up, số câu ngân hàng đề, luật thi.
 - Danh sách lỗi theo dạng **"Sheet Câu hỏi, dòng 7: đáp án đúng 'E' không hợp lệ"**. Có lỗi thì không cho xuất.
 - Kiểm tra (tối thiểu bằng `build_scorm.py`, cộng thêm):
@@ -49,10 +58,6 @@ Trình duyệt của trainer (Chrome/Edge)
   - số câu mỗi lần thi > ngân hàng
   - mã khóa có dấu/khoảng trắng
   - cảnh báo (không chặn): tổng dung lượng > 3,5 GB (giới hạn Workday 4 GB), video không phải .mp4, 2 pop-up cách nhau < 60 giây
-
-**Bước 3 – Đặt pop-up (tùy chọn)**
-- Chọn video → phát → bấm **"Đặt pop-up tại đây"** → điền mốc mm:ss vào danh sách.
-- Kết quả: bảng (Video số, Mốc thời gian) để **copy dán vào Excel**. Builder không sửa file Excel của người dùng.
 
 **Bước 4 – Xem thử**
 - Mở Player trong iframe với dữ liệu khóa vừa đọc, video bằng Blob URL, chạy chế độ "Xem thử" (LMS giả lập có sẵn trong `scorm12.js`).
@@ -115,6 +120,7 @@ Quy tắc đọc Excel: xem `read_excel()` trong `tools/build_scorm.py`. Dòng v
 | M1 ✅ | Khung Vite, copy Player, đọc Excel + thư mục video, màn hình kiểm tra lỗi | Khóa demo hiện đúng tóm tắt; cố tình làm sai 5 loại lỗi thì báo đúng dòng |
 | M2 ✅ | Xuất zip streaming + thông tin Workday | Test tương đương với `build_scorm.py` đạt; 26/26 test Player đạt trên gói của Builder; xuất được khóa giả lập 1,5 GB không treo máy |
 | M3 ✅ | Xem thử + đặt pop-up | Xem thử chạy đúng luật chơi; mốc đặt bằng nút khớp với giây trên video demo |
+| M3.1 ✅ | Luồng mới: chọn thư mục 1 lần, tự tìm Excel, Kiểm tra lại; đặt pop-up trước kiểm tra | Đặt pop-up được khi chưa có Excel; sửa Excel rồi Kiểm tra lại đọc bản mới mà không chọn lại |
 | M4 | Deploy + hướng dẫn 1 trang | Link chạy trên Chrome/Edge (Windows và Mac); `docs/HUONG_DAN_TRAINER.md` ≤ 1 trang |
 
 ## 8. Việc Alex cần cung cấp
