@@ -53,7 +53,7 @@ def make(demo, OUT):
   ("Luật chơi cố định",""),
   ("•","Học tuần tự: bài sau chỉ mở khi xem xong bài trước."),
   ("•","Video chỉ tua lại phần đã xem, không tua tới. Tốc độ tối đa 2x. Rời trang/chuyển tab thì video tự dừng."),
-  ("•","Pop-up không tính điểm. Trả lời sai thì phải xem lại đoạn video trước câu hỏi (từ pop-up trước đó, hoặc từ đầu video)."),
+  ("•","Pop-up không tính điểm. Trả lời sai thì chọn lại tới khi đúng (không phải xem lại video). Trả lời đúng được ghi nhận ngay."),
   ("•","Bài kiểm tra chỉ mở khi đã xem hết video. Khóa không có câu hỏi CUỐI KHÓA sẽ hoàn thành khi xem hết video."),
   ("•","Hết lượt làm bài: bài kiểm tra bị khóa, học viên thấy nội dung liên hệ L&OD. L&OD đăng ký lại cho học viên trên Workday."),
   ("",""),

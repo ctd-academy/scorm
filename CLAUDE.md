@@ -8,7 +8,7 @@ Coteccons (tập đoàn xây dựng, ~4.000 nhân viên) chuyển ~150 khóa e-l
 
 | Phần | Trạng thái | Vai trò |
 |---|---|---|
-| `player/` | ✅ Xong, 43/43 test đạt (có tài liệu PDF) | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
+| `player/` | ✅ Xong, 47/47 test đạt (có tài liệu PDF) | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
 | `builder/` | 🟡 **M1–M3 xong** (kiểm tra lỗi, đặt pop-up, xem thử, xuất zip SCORM), còn M4 (hướng dẫn 1 trang cho trainer) | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
 
 Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&OD, không phải lập trình viên.
@@ -29,7 +29,7 @@ Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&O
 3. **Excel là nơi nhập liệu chính** (template chuẩn, trống: `templates/Mau_nhap_lieu_khoa_hoc.xlsx`; khóa demo: `demo-course/ATLD-DEMO.xlsx`; cả hai do `tools/make_template.py` tạo). Builder không thay Excel bằng form.
 4. **Player là nguồn chuẩn.** Builder nhúng nguyên `player/` vào gói, không viết lại luật chơi. Sửa luật chơi = sửa `player/` + chạy lại test.
 5. **Một động cơ đóng gói** (28/10/2026): `builder/src/` (`xlsx.js`, `course.js`, `package.js`, `zip.js`) dùng chung cho website và lệnh `builder/scripts/build-scorm.mjs`. Đã bỏ bản Python `tools/build_scorm.py`; gói khóa demo so với gói mẫu `builder/tests/golden/ATLD-DEMO.json`.
-6. Luật chơi Player: học tuần tự · chỉ tua lại phần đã xem · tối đa 2x · chuyển tab thì dừng · pop-up không tính điểm, sai thì xem lại từ pop-up trước (hoặc đầu video) · bài thi tùy chỉnh theo khóa · hết lượt thì báo `failed`, khóa bài thi, hiện liên hệ L&OD · chứng nhận do Workday cấp · tài liệu PDF theo từng video (không bắt buộc): xem song song khi video chạy, không có nút tải/in, ẩn khi làm bài thi, không in tên học viên.
+6. Luật chơi Player: học tuần tự · chỉ tua lại phần đã xem · tối đa 2x · chuyển tab thì dừng · pop-up không tính điểm, sai thì chọn lại tới khi đúng (không phải xem lại video), đúng thì lưu ngay · bài thi tùy chỉnh theo khóa · hết lượt thì báo `failed`, khóa bài thi, hiện liên hệ L&OD · chứng nhận do Workday cấp · tài liệu PDF theo từng video (không bắt buộc): xem song song khi video chạy, không có nút tải/in, ẩn khi làm bài thi, không in tên học viên.
 7. **Host:** repo `ctd-academy/scorm` (tài khoản team) và host trên **GitHub Pages**.
 8. **Không dùng Lovable** cho phần lõi (đóng gói, Player). Có thể dùng để phác giao diện.
 
@@ -40,4 +40,4 @@ Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&O
 
 ## Định nghĩa "xong" cho mỗi thay đổi
 
-Xem `docs/DEV.md` mục 9. Tóm tắt: `bash tests/run_all.sh` đạt hết (19 test logic, 43 test Player, 80 test giao diện); gói khóa demo khớp gói mẫu; thử trên Chrome và Edge.
+Xem `docs/DEV.md` mục 9. Tóm tắt: `bash tests/run_all.sh` đạt hết (19 test logic, 47 test Player, 80 test giao diện); gói khóa demo khớp gói mẫu; thử trên Chrome và Edge.
