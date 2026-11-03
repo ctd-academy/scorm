@@ -5,7 +5,8 @@
    - Học tuần tự; bài sau mở khi bài trước xong
    - Video: chỉ tua lại trong phần đã xem, tốc độ tối đa 2x,
      tự dừng khi rời trang/chuyển tab
-   - Pop-up: không tính điểm; trả lời sai -> xem lại đoạn trước câu hỏi
+   - Pop-up: không tính điểm; trả lời sai -> chọn lại tới khi đúng (không phải xem
+     lại video); trả lời đúng -> lưu ngay
    - Bài thi cuối: tùy chỉnh theo khóa (số câu, thời gian, hiện đáp án,
      điểm đạt, số lượt); hết lượt -> khóa bài thi, liên hệ L&OD
    - Tài liệu PDF theo từng video (không bắt buộc): xem song song khi video
@@ -154,7 +155,7 @@
       if (!confirm("Bạn đang làm bài. Rời đi bây giờ sẽ mất lượt này. Vẫn rời đi?")) return;
       stopTimer();
     }
-    if (vid) { vid.pause(); vid.removeAttribute("src"); vid.load(); vid = null; }
+    if (vid) { if (typeof view === "number") S.v[view][1] = vid.currentTime; vid.pause(); vid.removeAttribute("src"); vid.load(); vid = null; }
     closeDocView();
     document.querySelector(".layout").classList.remove("doc-open");
     view = target;
@@ -194,6 +195,9 @@
     }
 
     vid = $("vid");
+    popupOpen = false;     // pop-up của bài trước (nếu đang mở dở) không còn
+    // Chỉ xử lý sự kiện của video đang hiện: video cũ vẫn bắn pause/ratechange sau khi đã rời bài
+    function on(ev, fn) { var el = vid; el.addEventListener(ev, function () { if (vid === el) fn(); }); }
     var maxW = st[0], seekGuard = false;
 
     function updateWatch() {
@@ -206,7 +210,7 @@
 
     $("speed").onchange = function () { curRate = parseFloat(this.value); vid.playbackRate = curRate; };
 
-    vid.addEventListener("loadedmetadata", function () {
+    on("loadedmetadata", function () {
       vid.playbackRate = curRate;
       if (!v.duration) v.duration = vid.duration;
       if (st[2]) maxW = Math.max(maxW, vid.duration);
@@ -214,10 +218,10 @@
       if (resume > 1 && resume < vid.duration - 2) { seekGuard = true; vid.currentTime = resume; }
       updateWatch();
     });
-    vid.addEventListener("ratechange", function () {
+    on("ratechange", function () {
       if (vid.playbackRate > SET.maxSpeed) { vid.playbackRate = SET.maxSpeed; toast("Tốc độ tối đa là " + SET.maxSpeed + "x"); }
     });
-    vid.addEventListener("seeking", function () {
+    on("seeking", function () {
       if (seekGuard) return;
       if (vid.currentTime > maxW + 0.75) {
         seekGuard = true;
@@ -225,9 +229,9 @@
         toast("Bạn chỉ có thể tua lại phần đã xem");
       }
     });
-    vid.addEventListener("seeked", function () { seekGuard = false; });
-    vid.addEventListener("play", function () { if (popupOpen) vid.pause(); });
-    vid.addEventListener("timeupdate", function () {
+    on("seeked", function () { seekGuard = false; });
+    on("play", function () { if (popupOpen) vid.pause(); });
+    on("timeupdate", function () {
       if (seekGuard || popupOpen) return;
       var t = vid.currentTime;
       if (t > maxW && t - maxW < 3) maxW = t;
@@ -236,15 +240,15 @@
       for (var k = 0; k < pops.length; k++) {
         var p = pops[k];
         if (S.p.indexOf(p.id) >= 0) continue;
-        if (t >= p.time) { showPopup(p, k); return; }
+        if (t >= p.time) { showPopup(p); return; }
         break;
       }
       if (!st[2] && isFinite(vid.duration) && maxW >= vid.duration - 0.5) markDone();
       updateWatch();
       save(false);
     });
-    vid.addEventListener("ended", function () { markDone(); });
-    vid.addEventListener("pause", function () { st[1] = vid.currentTime; save(true); });
+    on("ended", function () { markDone(); });
+    on("pause", function () { st[1] = vid.currentTime; save(true); });
 
     function markDone() {
       if (st[2]) return;
@@ -257,35 +261,43 @@
       toast(i < VIDEOS.length - 1 ? "Hoàn thành bài " + (i + 1) + ". Bài tiếp theo đã mở." : (HAS_QUIZ ? "Bạn đã xem hết video. Bài kiểm tra đã mở." : "Bạn đã hoàn thành khóa học!"));
     }
 
-    function showPopup(p, k) {
+    function showPopup(p) {
       popupOpen = true;
       vid.pause();
       exitFullscreen();
-      var segStart = 0;
-      for (var j = k - 1; j >= 0; j--) { segStart = pops[j].time; break; }
       var box = $("pop");
       box.innerHTML = '<div class="card"><span class="tag">Câu hỏi nhanh</span><h4>' + esc(p.q) + "</h4>" +
         p.options.map(function (o, oi) { return '<button class="opt" data-o="' + oi + '">' + String.fromCharCode(65 + oi) + ". " + esc(o) + "</button>"; }).join("") +
         '<div id="popFb"></div></div>';
       box.classList.add("show");
+      var myVid = vid;
+      function resume() {
+        // học viên đã sang bài khác trong lúc chờ thì thôi
+        if (!popupOpen || vid !== myVid || !box.isConnected) return;
+        box.classList.remove("show"); popupOpen = false; vid.play();
+      }
       Array.prototype.forEach.call(box.querySelectorAll(".opt"), function (b) {
         b.onclick = function () {
-          var pick = parseInt(b.getAttribute("data-o"), 10), ok = pick === p.answer;
-          Array.prototype.forEach.call(box.querySelectorAll(".opt"), function (x) { x.disabled = true; });
-          b.classList.add(ok ? "right" : "wrong");
           var fb = $("popFb");
-          if (ok) {
-            fb.innerHTML = '<div class="fb ok">Chính xác!' + (p.explain ? " " + esc(p.explain) : "") + '</div><button class="btn teal" id="popGo">Tiếp tục xem ▶</button>';
-            $("popGo").onclick = function () {
-              S.p.push(p.id); save(true);
-              box.classList.remove("show"); popupOpen = false; updateWatch(); vid.play();
-            };
+          b.disabled = true;
+          if (parseInt(b.getAttribute("data-o"), 10) !== p.answer) {
+            // Sai: khóa riêng phương án này, chọn lại tới khi đúng (không phải xem lại video)
+            b.classList.add("wrong");
+            fb.innerHTML = '<div class="fb no">Chưa đúng, hãy chọn lại.</div>';
+            return;
+          }
+          // Đúng: lưu ngay, không chờ học viên bấm tiếp
+          b.classList.add("right");
+          Array.prototype.forEach.call(box.querySelectorAll(".opt"), function (x) { x.disabled = true; });
+          if (S.p.indexOf(p.id) < 0) S.p.push(p.id);
+          save(true); updateWatch();
+          if (p.explain) {
+            // Có giải thích: để học viên đọc xong rồi tự bấm tiếp
+            fb.innerHTML = '<div class="fb ok">Chính xác! ' + esc(p.explain) + '</div><button class="btn teal" id="popGo">Tiếp tục xem ▶</button>';
+            $("popGo").onclick = resume;
           } else {
-            fb.innerHTML = '<div class="fb no">Chưa đúng. Hãy xem lại đoạn video trước câu hỏi này nhé.</div><button class="btn primary" id="popBack">↺ Xem lại từ ' + fmt(segStart) + "</button>";
-            $("popBack").onclick = function () {
-              box.classList.remove("show"); popupOpen = false;
-              seekGuard = true; vid.currentTime = segStart; vid.play();
-            };
+            fb.innerHTML = '<div class="fb ok">Chính xác!</div>';
+            setTimeout(resume, 1500);
           }
         };
       });

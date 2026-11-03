@@ -86,23 +86,33 @@ with sync_playwright() as p:
     page.screenshot(path=SHOTS + "shot_popup.png")
     f.click("#pop .opt[data-o='0']")   # sai
     page.screenshot(path=SHOTS + "shot_popup_wrong.png")
-    f.click("#popBack")
-    time.sleep(0.8)
-    check("Trả lời sai -> quay lại đầu đoạn (0:00)", f.evaluate("document.getElementById('vid').currentTime") < 2,
+    time.sleep(0.5)
+    check("Trả lời sai -> vẫn ở câu hỏi, video không lùi",
+          f.evaluate("document.getElementById('pop').classList.contains('show')") and f.evaluate("document.getElementById('vid').currentTime") >= 14.9,
           f.evaluate("document.getElementById('vid').currentTime"))
-    f.wait_for_selector("#pop.show", timeout=20000)
-    check("Pop-up hỏi lại sau khi xem lại", True)
+    check("Trả lời sai -> khóa phương án đã chọn, các phương án khác vẫn chọn được",
+          f.evaluate("""() => { const o = document.querySelectorAll('#pop .opt');
+                                return o[0].disabled && o[0].classList.contains('wrong') && !o[1].disabled && !o[2].disabled; }"""))
     f.click("#pop .opt[data-o='1']")   # đúng
+    check("Trả lời đúng -> lưu ngay, chưa cần bấm Tiếp tục xem", 0 in json.loads(store()["cmi.suspend_data"])["p"], store()["cmi.suspend_data"])
+    check("Câu có giải thích -> chờ học viên bấm Tiếp tục xem",
+          f.evaluate("document.getElementById('pop').classList.contains('show') && !!document.getElementById('popGo')"))
     f.click("#popGo")
     f.wait_for_selector("#pop.show", timeout=30000)
     t2 = f.evaluate("document.getElementById('vid').currentTime")
     check("Pop-up 2 hiện ở mốc 0:40", 39.9 <= t2 <= 41.5, round(t2, 2))
-    f.click("#pop .opt[data-o='0']")   # sai -> quay về 0:15
-    f.click("#popBack"); time.sleep(0.8)
-    t3 = f.evaluate("document.getElementById('vid').currentTime")
-    check("Sai pop-up 2 -> quay về mốc pop-up trước (0:15)", 14.5 <= t3 <= 16.5, round(t3, 2))
-    f.wait_for_selector("#pop.show", timeout=30000)
-    f.click("#pop .opt[data-o='2']"); f.click("#popGo")
+    f.click("#pop .opt[data-o='0']")   # sai
+    f.click("#pop .opt[data-o='1']")   # sai lần 2
+    check("Sai 2 lần -> vẫn chọn lại được", not f.evaluate("document.querySelectorAll('#pop .opt')[2].disabled"))
+    f.click("#pop .opt[data-o='2']")   # đúng, rồi tải lại trang ngay (không bấm Tiếp tục xem)
+    time.sleep(0.3)
+    page.reload(); time.sleep(1.5); f = frame(page)
+    f.wait_for_function("document.getElementById('vid').readyState >= 1", timeout=10000)
+    f.evaluate("() => { const v = document.getElementById('vid'); v.muted = true; v.playbackRate = 2; v.play(); }")
+    time.sleep(1.5)
+    check("Đúng rồi tải lại trang -> không hỏi lại câu đó",
+          not f.evaluate("document.getElementById('pop').classList.contains('show')") and f.evaluate("document.getElementById('vid').currentTime") >= 39,
+          f.evaluate("document.getElementById('vid').currentTime"))
     f.wait_for_function("!document.getElementById('nextBtn').disabled", timeout=30000)
     check("Xem hết video 1 -> bài 2 mở khóa", not f.evaluate("document.querySelectorAll('#tocList li')[1].classList.contains('locked')"))
     sd = json.loads(store()["cmi.suspend_data"])
@@ -113,6 +123,13 @@ with sync_playwright() as p:
     f.click("#nextBtn"); time.sleep(1)
     page.reload(); time.sleep(1.5); f = frame(page)
     check("Học tiếp đúng chỗ (bài 2) sau khi tải lại", "Trang bị bảo hộ" in f.evaluate("document.querySelector('.main h2').textContent"))
+    f.wait_for_function("document.getElementById('vid').readyState >= 1", timeout=10000)
+    f.evaluate("() => { const v = document.getElementById('vid'); v.muted = true; v.playbackRate = 2; v.play(); }")
+    f.wait_for_selector("#pop.show", timeout=30000)
+    f.click("#pop .opt[data-o='1']")   # đúng, câu này không có giải thích
+    time.sleep(2.5)
+    check("Câu không có giải thích -> trả lời đúng thì video tự chạy tiếp",
+          not f.evaluate("document.getElementById('pop').classList.contains('show')") and not f.evaluate("document.getElementById('vid').paused"))
 
     # ---- B. Quiz: rớt 1 lần rồi đạt
     skip_videos(f); time.sleep(0.5)

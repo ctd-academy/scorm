@@ -138,6 +138,8 @@ Với 3 file này: sửa ít nhất có thể, thêm test cho đúng trường h
 - **PDF.js trong Player:** đổi đuôi `.mjs` → `.js` (máy chủ LMS có thể trả `.mjs` sai kiểu). Chỉ nạp khi học viên bấm "Tài liệu". Vẽ lên canvas, chỉ vẽ trang gần màn hình.
 - **Xem thử trong Builder:** video dùng Blob URL (tua bình thường). `player/preview.html` do `copy-assets.mjs` tạo từ `player/index.html`, đọc dữ liệu khóa từ trang Builder.
 - **Test xuất khóa lớn** (`LARGE=1 bash tests/run_all.sh`) cần ~5 GB ổ trống và dùng hồ sơ trình duyệt lưu trên đĩa (hồ sơ mặc định của Playwright nằm trong RAM).
+- **Sự kiện của video cũ:** khi rời bài, video cũ vẫn bắn `pause`/`ratechange` sau khi biến `vid` đã đổi sang video mới (hoặc `null` khi vào bài thi). Trong `renderVideo` của `player.js`, gắn sự kiện video bằng hàm `on(...)` (chỉ chạy khi đúng video đang hiện), không dùng thẳng `vid.addEventListener`.
+- **Pop-up (từ 03/11/2026):** sai thì chọn lại tới khi đúng, không lùi video. Đúng thì lưu ngay vào `suspend_data`; câu có giải thích chờ học viên bấm "Tiếp tục xem", câu không có thì video tự chạy sau 1,5 giây.
 - **Excel bản cũ của Alex:** công thức trong hướng dẫn viết bằng dấu `;`.
 
 ## 9. Định nghĩa "xong" cho mỗi thay đổi

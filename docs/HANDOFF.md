@@ -58,7 +58,7 @@
 | 4 | Học **tuần tự** theo thứ tự quy định | ✅ |
 | 5 | Tốc độ phát **tối đa 2x** | ✅ |
 | 6 | Pop-up **không tính điểm**, chỉ để đảm bảo học viên theo dõi | ✅ |
-| 7 | Sai pop-up → **xem lại đoạn trước câu hỏi** (từ pop-up trước đó, hoặc từ đầu video) | ✅ |
+| 7 | Sai pop-up → **chọn lại tới khi đúng**, không phải xem lại video (đổi 03/11/2026, trước đây là xem lại từ pop-up trước). Đúng → lưu ngay; câu có giải thích thì học viên bấm "Tiếp tục xem", không có thì video tự chạy tiếp | ✅ |
 | 8 | Bài thi **tùy chỉnh theo khóa**: ngân hàng đề, số câu mỗi lần, thời gian, hiện đáp án hay không, điểm đạt, số lượt | ✅ |
 | 9 | Rớt hết lượt (mặc định 3) → khóa bài thi, **liên hệ L&OD**; L&OD đăng ký lại học viên trên Workday | ✅ (cần xác nhận cơ chế đăng ký lại) |
 | 10 | **Chứng nhận dùng của Workday**, không tạo trong gói | ✅ |
