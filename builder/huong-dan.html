@@ -8,244 +8,224 @@
 </head>
 <!--
   Hướng dẫn cho trainer, mở từ nút "📖 Hướng dẫn" ở đầu trang Builder.
-  Sửa giao diện Builder, cột Excel hoặc luật học thì sửa trang này cho khớp.
-  In ra PDF: mở trang, bấm Ctrl+P (trang 1 là checklist, phần chi tiết bắt đầu từ trang 2).
+  Đi từ đơn giản tới chi tiết: (1) 4 bước lớn, nhìn 1 lần là hiểu · (2) bấm từng bước để xem việc cần làm
+  · (3) "Tra cứu khi cần": bảng cột Excel, bảng lỗi, câu hỏi thường gặp (đóng sẵn).
+  Sửa giao diện Builder, cột Excel, thông báo lỗi hoặc luật học thì sửa trang này cho khớp.
 -->
 <body class="guide">
   <header class="hdr">
     <a href="./"><img class="logo" src="./assets/coteccons-logo-white.png" alt="Coteccons"></a>
     <span class="sep"></span>
-    <div class="ttl"><b>Hướng dẫn đóng gói khóa học</b><small>Từ thư mục video đến khóa học trên Workday</small></div>
-    <span class="hdr-links"><a href="./">← Về Builder</a><button class="linkbtn" onclick="print()">🖨 In / lưu PDF</button></span>
+    <div class="ttl"><b>Hướng dẫn đóng gói khóa học</b><small>Dành cho trainer L&amp;OD</small></div>
+    <span class="hdr-links"><a href="./">← Về Builder</a><button class="linkbtn" id="printBtn">🖨 In</button></span>
   </header>
 
   <main>
-    <!-- ======================================================= TRANG 1: CHECKLIST -->
-    <section class="sheet" id="tom-tat">
-      <h1>Checklist 1 trang</h1>
-      <p class="lead">Mỗi khóa học = <b>1 thư mục</b> (video + tài liệu PDF + 1 file Excel) = <b>1 file SCORM .zip</b> đưa lên Workday.
-        Mọi thứ chạy ngay trên máy bạn: <b>video và đề thi không được tải lên đâu cả</b>.</p>
+    <!-- ======================================================= TẦNG 1: NHÌN 1 LẦN LÀ HIỂU -->
+    <section class="hero" id="tom-tat">
+      <h1>Đóng gói 1 khóa học trong 4 bước</h1>
+      <p class="lead">1 thư mục (video + file Excel) → Builder → 1 file <b>.zip</b> → Workday.<br>
+        Video không bị tải lên mạng: mọi thứ chạy ngay trên máy bạn.</p>
 
-      <ol class="check">
-        <li><b>Chuẩn bị máy.</b> Dùng <b>Chrome</b> hoặc <b>Edge</b> bản mới (Windows hoặc Mac). Trình duyệt khác chỉ xuất được khóa dưới 500 MB.</li>
-        <li><b>Gom thư mục khóa.</b> Một thư mục cho mỗi khóa, chứa video (.mp4), tài liệu PDF (nếu có) và file Excel.
-          Để video trong các thư mục con cũng được. Thư mục trên OneDrive: chuột phải › <i>Always keep on this device</i>. <a href="#b1">Chi tiết</a></li>
-        <li><b>Tải file Excel mẫu</b> (<a href="./assets/Mau_nhap_lieu_khoa_hoc.xlsx" download>tải ở đây</a>), lưu vào thư mục khóa, đặt tên theo mã khóa, ví dụ <code>ATLD-001.xlsx</code>.</li>
-        <li><b>Chọn loại khóa</b> ở dòng <i>Loại khóa</i> (sheet <i>Thông tin khóa</i>):
-          <b>Bắt buộc</b> (học tuần tự, chặn tua tới, có pop-up và bài kiểm tra) hoặc
-          <b>Tham khảo</b> (tài liệu hướng dẫn: xem tự do, không kiểm tra). <a href="#b2">Chi tiết</a></li>
-        <li><b>Điền Excel:</b> <i>Thông tin khóa</i> → <i>Video</i> (mỗi dòng 1 bài, đúng thứ tự học). Chưa cần điền xong, cứ lưu lại. <a href="#b3">Chi tiết</a></li>
-        <li><b>Mở Builder</b> (<a href="./">ctd-academy.github.io/scorm</a>) › <b>Chọn thư mục khóa</b>. Builder tự tìm file Excel trong thư mục.</li>
-        <li><b>Bước 2 – Đặt pop-up và chương</b> (không bắt buộc): phát video, bấm <b>Đặt pop-up tại đây</b> / <b>Đặt chương tại đây</b>,
-          bấm <b>Copy bảng</b>, dán vào Excel, viết câu hỏi. Lưu Excel. <a href="#b4">Chi tiết</a></li>
-        <li><b>Viết câu hỏi cuối khóa</b> (khóa Bắt buộc có thi) ở sheet <i>Câu hỏi</i>, loại <code>CUOI KHOA</code>. Lưu Excel.</li>
-        <li><b>Bước 3 – Kiểm tra:</b> bấm <b>🔄 Kiểm tra lại</b>, sửa Excel theo từng dòng báo lỗi, lưu, bấm lại tới khi thấy
-          <span class="ok-chip">Không có lỗi</span>. <i>Lưu ý</i> màu cam thì không bắt buộc sửa. <a href="#loi">Lỗi hay gặp</a></li>
-        <li><b>Bước 4 – Xem thử</b>: học thử như học viên (video, pop-up, chương, tài liệu, bài thi).</li>
-        <li><b>Bước 5 – Xuất gói SCORM</b>: lưu file <code>SCORM_&lt;Mã khóa&gt;.zip</code>. Đừng đóng trang khi đang ghi.</li>
-        <li><b>Đưa lên Workday</b> dạng <i>Packaged Content (SCORM)</i>, điền tên, mã, mô tả, thời lượng theo bảng Builder đưa ra ở bước 5. <a href="#b6">Chi tiết</a></li>
+      <ol class="big4">
+        <li><a href="#s1"><span class="ic">📁</span><span class="n">Bước 1</span><b>Gom thư mục</b><span>Bỏ video và file Excel mẫu vào 1 thư mục</span></a></li>
+        <li><a href="#s2"><span class="ic">📝</span><span class="n">Bước 2</span><b>Điền Excel</b><span>Tên khóa và danh sách video</span></a></li>
+        <li><a href="#s3"><span class="ic">🖥️</span><span class="n">Bước 3</span><b>Đóng gói</b><span>Mở Builder, sửa lỗi, bấm Xuất gói</span></a></li>
+        <li><a href="#s4"><span class="ic">☁️</span><span class="n">Bước 4</span><b>Đưa lên Workday</b><span>Tải file .zip lên</span></a></li>
       </ol>
 
-      <div class="tip"><b>Sửa khóa sau này:</b> giữ nguyên thư mục khóa và file Excel. Sửa Excel → mở Builder → xuất lại → đưa gói mới lên Workday.
-        Gói cũ đã đưa lên không tự đổi.</div>
+      <div class="start">
+        <a class="btn" href="./assets/Mau_nhap_lieu_khoa_hoc.xlsx" download>⬇ Tải file Excel mẫu</a>
+        <a class="btn btn-ghost" href="./">Mở Builder</a>
+        <span class="small">Dùng <b>Chrome</b> hoặc <b>Edge</b>.</span>
+      </div>
     </section>
 
-    <!-- ======================================================= CHI TIẾT -->
-    <nav class="sheet toc-guide">
-      <h2>Phần chi tiết</h2>
+    <!-- ======================================================= TẦNG 2: LÀM TỪNG BƯỚC -->
+    <h2 class="part">Làm từng bước <small>bấm vào bước để xem</small></h2>
+
+    <details class="step-d" id="s1">
+      <summary><span class="n">1</span>Gom thư mục <small>📁 khoảng 5 phút</small></summary>
       <ol>
-        <li><a href="#b1">Chuẩn bị thư mục khóa, video, tài liệu</a></li>
-        <li><a href="#b2">Chọn loại khóa: Bắt buộc hay Tham khảo</a></li>
-        <li><a href="#b3">Điền file Excel</a></li>
-        <li><a href="#b4">Dùng Builder: 5 bước</a></li>
-        <li><a href="#b5">Viết câu hỏi tốt</a></li>
-        <li><a href="#b6">Đưa lên Workday</a></li>
-        <li><a href="#loi">Lỗi hay gặp và cách sửa</a></li>
-        <li><a href="#hoi">Câu hỏi thường gặp</a></li>
+        <li>Tạo <b>1 thư mục</b> cho khóa, ví dụ <code>ATLD-001</code>.</li>
+        <li>Bỏ các <b>video (.mp4)</b> vào. Để trong thư mục con cũng được.</li>
+        <li>Có slide? Lưu thành <b>PDF</b> (PowerPoint: <i>File › Save As › PDF</i>) và bỏ vào cùng thư mục.</li>
+        <li><a href="./assets/Mau_nhap_lieu_khoa_hoc.xlsx" download>Tải file Excel mẫu</a>, lưu vào thư mục, đặt tên theo mã khóa: <code>ATLD-001.xlsx</code>.</li>
       </ol>
-    </nav>
+      <p class="hint">Thư mục trên OneDrive: chuột phải › <i>Always keep on this device</i>, đợi các file có dấu tick xanh.
+        <a href="#r-video">Yêu cầu về video, tài liệu</a></p>
+    </details>
 
-    <section class="sheet" id="b1">
-      <h2>1. Chuẩn bị thư mục khóa, video, tài liệu</h2>
-      <pre class="tree">ATLD-001/                     ← thư mục khóa (tên tùy ý)
-├─ ATLD-001.xlsx              ← file Excel của khóa
-├─ 01. Tong quan/
-│  ├─ 01_gioi-thieu.mp4
-│  └─ slide-bai-1.pdf
-└─ 02. An toan dien/
-   └─ 02_an-toan-dien.mp4</pre>
-      <ul>
-        <li><b>Video:</b> dạng <b>.mp4</b> (H.264), nên <b>720p</b>. Khoảng 400–700 MB mỗi giờ video. Cả khóa phải dưới <b>4 GB</b> (giới hạn của Workday).</li>
-        <li><b>Tài liệu</b> (thường là slide): phải là <b>PDF</b>. Trong PowerPoint: <i>File › Save As › PDF</i>. Nên dưới 50 MB mỗi file.
-          Học viên xem song song khi video chạy, <b>không có nút tải/in</b>.</li>
-        <li><b>Tên file:</b> không cần đổi. Windows hay ẩn đuôi <code>.mp4</code>, <code>.pdf</code>: ghi trong Excel có hay không có đuôi đều được.</li>
-        <li><b>Thư mục con:</b> Builder tìm video theo tên ở mọi thư mục con. Nếu 2 thư mục có file trùng tên, Builder sẽ nhắc ghi rõ thư mục, ví dụ <code>02. An toan dien/bai.mp4</code>.</li>
-        <li><b>OneDrive/SharePoint:</b> file "chỉ trên mạng" (biểu tượng đám mây) không đọc được. Chuột phải thư mục › <i>Always keep on this device</i>, đợi các file có dấu tick xanh.</li>
-      </ul>
-    </section>
+    <details class="step-d" id="s2">
+      <summary><span class="n">2</span>Điền Excel <small>📝 phần bắt buộc chỉ 2 sheet</small></summary>
+      <ol>
+        <li>Sheet <b>Thông tin khóa</b>: điền <b>Mã khóa</b>, <b>Tên khóa</b>, và chọn <b>Loại khóa</b>:
+          <ul class="kinds">
+            <li><b>Bắt buộc</b>: học lần lượt, không tua tới, có câu hỏi và bài kiểm tra.</li>
+            <li><b>Tham khảo</b>: tài liệu hướng dẫn, xem tự do, không kiểm tra.</li>
+          </ul></li>
+        <li>Sheet <b>Video</b>: mỗi dòng 1 video, đúng thứ tự học. Ghi tên bài và tên file video.</li>
+        <li>Lưu file. <b>Chưa cần điền xong</b>: câu hỏi và chương làm ở bước 3 cho dễ.</li>
+      </ol>
+      <p class="hint">Ô nền vàng là ô cần điền. Dòng 2 ở mỗi sheet là ví dụ. Các mục còn lại đã có sẵn giá trị gợi ý.
+        <a href="#r-excel">Giải thích từng cột Excel</a></p>
+    </details>
 
-    <section class="sheet" id="b2">
-      <h2>2. Chọn loại khóa: Bắt buộc hay Tham khảo</h2>
-      <p>Chọn ở dòng <b>Loại khóa</b> (dòng cuối sheet <i>Thông tin khóa</i>). Để trống = Bắt buộc.</p>
+    <details class="step-d" id="s3">
+      <summary><span class="n">3</span>Đóng gói bằng Builder <small>🖥️ Builder có 5 bước, làm từ trên xuống</small></summary>
+      <ol>
+        <li>Mở <a href="./">Builder</a>, bấm <b>Chọn thư mục khóa</b>.</li>
+        <li><i>(Không bắt buộc)</i> Thêm câu hỏi giữa video, chương: phát video, bấm <b>Đặt pop-up tại đây</b> / <b>Đặt chương tại đây</b>,
+          bấm <b>Copy bảng</b>, dán vào Excel, lưu. <a href="#r-cauhoi">Mẹo viết câu hỏi</a></li>
+        <li>Builder báo <span class="bad-chip">lỗi</span>? Sửa Excel đúng dòng được chỉ, lưu, bấm <b>🔄 Kiểm tra lại</b>. Lặp lại tới khi thấy
+          <span class="ok-chip">Không có lỗi</span>. <a href="#r-loi">Cách sửa lỗi hay gặp</a></li>
+        <li>Bấm <b>Mở xem thử</b>, học thử như học viên.</li>
+        <li>Bấm <b>Xuất gói SCORM</b>, lưu file <code>SCORM_ATLD-001.zip</code>. Đừng đóng trang khi đang ghi.</li>
+      </ol>
+      <p class="hint"><span class="warn-chip">Lưu ý</span> màu cam thì không bắt buộc sửa.</p>
+    </details>
+
+    <details class="step-d" id="s4">
+      <summary><span class="n">4</span>Đưa lên Workday <small>☁️</small></summary>
+      <ol>
+        <li>Tạo khóa trên Workday Learning, thêm bài học dạng <b>Packaged Content (SCORM)</b>.</li>
+        <li>Tải lên file <b>.zip</b> vừa xuất (giữ nguyên, không giải nén).</li>
+        <li>Điền tên, mã, mô tả, thời lượng: copy từ bảng Builder hiện ra sau khi xuất.</li>
+        <li>Học thử vài phút bằng tài khoản thử.</li>
+      </ol>
+      <p class="hint">Sửa khóa sau này: sửa Excel trong thư mục cũ → xuất lại → đưa gói mới lên Workday.</p>
+    </details>
+
+    <!-- ======================================================= TẦNG 3: TRA CỨU KHI CẦN -->
+    <h2 class="part">Tra cứu khi cần</h2>
+
+    <details class="ref-d" id="r-loai">
+      <summary>Chọn loại khóa: Bắt buộc hay Tham khảo?</summary>
       <table class="cmp">
         <thead><tr><th></th><th>Bắt buộc <small>(mặc định)</small></th><th>Tham khảo</th></tr></thead>
         <tbody>
-          <tr><th>Dùng cho</th><td>Khóa học có yêu cầu hoàn thành: an toàn, hội nhập, quy trình…</td><td>Tài liệu hướng dẫn, video tra cứu: xem lúc cần, xem đúng đoạn cần</td></tr>
-          <tr><th>Thứ tự bài</th><td>Học tuần tự, bài sau mở khi xem xong bài trước</td><td>Mở bài nào cũng được</td></tr>
+          <tr><th>Dùng cho</th><td>Khóa có yêu cầu hoàn thành: an toàn, hội nhập, quy trình…</td><td>Tài liệu hướng dẫn, video tra cứu</td></tr>
+          <tr><th>Thứ tự bài</th><td>Học lần lượt, xem xong bài trước mới mở bài sau</td><td>Mở bài nào cũng được</td></tr>
           <tr><th>Tua video</th><td>Chỉ tua lại phần đã xem</td><td>Tua tự do</td></tr>
           <tr><th>Chuyển tab</th><td>Video tự dừng</td><td>Video vẫn chạy</td></tr>
-          <tr><th>Pop-up, bài kiểm tra</th><td>Có (nếu nhập trong Excel)</td><td>Không có (sheet <i>Câu hỏi</i> bị bỏ qua)</td></tr>
-          <tr><th>Hoàn thành khi</th><td>Đạt bài kiểm tra, hoặc xem hết video nếu khóa không thi</td><td>Mở khóa là hoàn thành</td></tr>
-          <tr><th>Giống nhau</th><td colspan="2">Tốc độ tối đa 2x · tài liệu PDF xem song song, không tải/in · có chương để nhảy tới đoạn cần xem</td></tr>
+          <tr><th>Câu hỏi, bài kiểm tra</th><td>Có (nếu nhập trong Excel)</td><td>Không (sheet <i>Câu hỏi</i> bị bỏ qua)</td></tr>
+          <tr><th>Hoàn thành khi</th><td>Đạt bài kiểm tra; khóa không thi thì khi xem hết video</td><td>Mở khóa là hoàn thành</td></tr>
+          <tr><th>Giống nhau</th><td colspan="2">Tốc độ tối đa 2x · tài liệu PDF xem song song, không tải/in được · có chương để nhảy tới đoạn cần xem</td></tr>
         </tbody>
       </table>
-    </section>
+    </details>
 
-    <section class="sheet" id="b3">
-      <h2>3. Điền file Excel</h2>
-      <p>Ô <span class="cell-fill">nền vàng</span> là ô cần điền. <b>Không đổi tên sheet, không đổi tiêu đề cột.</b>
-        Dòng 2 ở mỗi sheet (chữ nghiêng, ghi "(Ví dụ)") là ví dụ, Builder bỏ qua. Nhập dữ liệu thật từ dòng 3.</p>
-
+    <details class="ref-d" id="r-excel">
+      <summary>Các cột trong file Excel</summary>
+      <p class="small">Không đổi tên sheet, không đổi tiêu đề cột. Nhập dữ liệu từ dòng 3 (dòng 2 là ví dụ).</p>
       <h3>Sheet "Thông tin khóa"</h3>
       <table>
-        <thead><tr><th>Mục</th><th>Điền gì</th></tr></thead>
         <tbody>
-          <tr><td>Mã khóa</td><td>Chữ không dấu, số, <code>-</code>, <code>_</code>, không khoảng trắng. Ví dụ <code>ATLD-001</code>. Dùng làm tên file SCORM</td></tr>
+          <tr><td>Mã khóa</td><td>Chữ không dấu, số, <code>-</code>, <code>_</code>, không khoảng trắng. Ví dụ <code>ATLD-001</code></td></tr>
           <tr><td>Tên khóa</td><td>Hiện trên đầu trang khóa học</td></tr>
           <tr><td>Mô tả ngắn</td><td>Dùng khi tạo khóa trên Workday</td></tr>
           <tr><td>Điểm đạt (%)</td><td>0–100. Gợi ý 80</td></tr>
-          <tr><td>Số lượt làm bài</td><td>1–20. Gợi ý 3. Hết lượt: bài thi khóa lại, học viên thấy nội dung liên hệ L&amp;OD</td></tr>
-          <tr><td>Số câu mỗi lần thi</td><td>Rút ngẫu nhiên từ ngân hàng đề. <code>0</code> = dùng tất cả. Gợi ý: rút 15–20 câu từ ngân hàng 20–30 câu</td></tr>
+          <tr><td>Số lượt làm bài</td><td>1–20. Gợi ý 3</td></tr>
+          <tr><td>Số câu mỗi lần thi</td><td>Rút ngẫu nhiên từ ngân hàng đề. <code>0</code> = dùng tất cả. Gợi ý: 15–20 câu từ ngân hàng 20–30 câu</td></tr>
           <tr><td>Thời gian làm bài (phút)</td><td><code>0</code> = không giới hạn. Gợi ý 1–1,5 phút mỗi câu</td></tr>
-          <tr><td>Hiện đáp án sau khi nộp</td><td>Có / Không. Nên chọn <i>Không</i> để người rớt không học thuộc đáp án</td></tr>
-          <tr><td>Nội dung liên hệ khi hết lượt</td><td>Có sẵn câu mặc định, thường không cần sửa</td></tr>
-          <tr><td>File logo (tùy chọn)</td><td>Để trống = logo Coteccons có sẵn</td></tr>
-          <tr><td>Loại khóa</td><td>Bắt buộc / Tham khảo (<a href="#b2">xem mục 2</a>)</td></tr>
+          <tr><td>Hiện đáp án sau khi nộp</td><td>Có / Không. Nên chọn <i>Không</i></td></tr>
+          <tr><td>Nội dung liên hệ khi hết lượt</td><td>Có sẵn, thường không cần sửa</td></tr>
+          <tr><td>File logo (tùy chọn)</td><td>Để trống = logo Coteccons</td></tr>
+          <tr><td>Loại khóa</td><td>Bắt buộc / Tham khảo. Khóa Tham khảo bỏ qua các mục về bài kiểm tra</td></tr>
         </tbody>
       </table>
-      <p class="small">Khóa Tham khảo không dùng các mục về bài kiểm tra: để nguyên giá trị có sẵn.</p>
-
       <h3>Sheet "Video"</h3>
-      <p>Mỗi dòng là <b>1 bài = 1 video</b>, theo đúng thứ tự học.</p>
       <table>
         <thead><tr><th>STT</th><th>Tên bài</th><th>Tên file video</th><th>Tài liệu PDF (tùy chọn)</th></tr></thead>
         <tbody><tr><td>1</td><td>Vì sao an toàn là trên hết</td><td>01_vi-sao-an-toan.mp4</td><td>slide-bai-1.pdf; checklist.pdf</td></tr></tbody>
       </table>
-      <p class="small">Nhiều tài liệu cho 1 video: cách nhau bằng dấu <code>;</code>. Chưa có danh sách video? Ở bước 2, Builder có nút <b>Copy danh sách video</b> để dán vào ô A3.</p>
-
-      <h3>Sheet "Câu hỏi" <small>(khóa Bắt buộc)</small></h3>
+      <p class="small">Nhiều tài liệu cho 1 video: cách nhau bằng <code>;</code>. Chưa có danh sách video? Builder có nút <b>Copy danh sách video</b>, dán vào ô A3.</p>
+      <h3>Sheet "Câu hỏi" <small>(chỉ khóa Bắt buộc)</small></h3>
       <table>
-        <thead><tr><th>Cột</th><th>Điền gì</th></tr></thead>
         <tbody>
           <tr><td>Loại</td><td><code>POPUP</code> = câu hỏi giữa video · <code>CUOI KHOA</code> = câu hỏi bài kiểm tra cuối khóa</td></tr>
-          <tr><td>Video số, Mốc thời gian</td><td>Chỉ điền cho POPUP: số thứ tự bài (cột STT) và phút:giây, ví dụ <code>01:30</code>. Lấy mốc bằng Builder bước 2 cho nhanh</td></tr>
-          <tr><td>Câu hỏi, A, B, C, D</td><td>Ít nhất A và B. C, D bỏ trống được, nhưng không bỏ trống phương án ở giữa</td></tr>
+          <tr><td>Video số, Mốc thời gian</td><td>Chỉ cho POPUP: số thứ tự bài và phút:giây, ví dụ <code>01:30</code>. Lấy bằng Builder cho nhanh</td></tr>
+          <tr><td>Câu hỏi, A, B, C, D</td><td>Ít nhất A và B; không bỏ trống phương án ở giữa</td></tr>
           <tr><td>Đáp án đúng</td><td>Một chữ: A, B, C hoặc D</td></tr>
-          <tr><td>Giải thích</td><td>Không bắt buộc. Hiện sau khi trả lời pop-up đúng, và khi xem lại bài thi (nếu bật hiện đáp án)</td></tr>
+          <tr><td>Giải thích</td><td>Không bắt buộc. Hiện sau khi trả lời đúng</td></tr>
         </tbody>
       </table>
-      <p class="small">Khóa không có câu <code>CUOI KHOA</code> sẽ hoàn thành khi học viên xem hết video.</p>
-
-      <h3>Sheet "Chương" <small>(không bắt buộc, cả hai loại khóa)</small></h3>
+      <p class="small">Không có câu <code>CUOI KHOA</code>: khóa hoàn thành khi học viên xem hết video.</p>
+      <h3>Sheet "Chương" <small>(không bắt buộc)</small></h3>
       <table>
         <thead><tr><th>Video số</th><th>Mốc thời gian</th><th>Tên chương</th></tr></thead>
         <tbody><tr><td>1</td><td>00:00</td><td>Giới thiệu</td></tr><tr><td>1</td><td>03:20</td><td>Cài đặt phần mềm</td></tr></tbody>
       </table>
-      <p class="small">Học viên thấy danh sách chương dưới video, bấm vào là nhảy tới đoạn đó. Khóa Bắt buộc chỉ bấm được chương đã xem tới.
-        Nên có 1 chương ở <code>00:00</code>. Nhập lộn thứ tự cũng được, Builder tự xếp.</p>
-    </section>
+      <p class="small">Học viên bấm tên chương là nhảy tới đoạn đó (khóa Bắt buộc: chỉ chương đã xem tới). Nên có 1 chương ở <code>00:00</code>.</p>
+    </details>
 
-    <section class="sheet" id="b4">
-      <h2>4. Dùng Builder: 5 bước</h2>
-      <div class="steps">
-        <div><span class="n">1</span><b>Chọn thư mục khóa</b>
-          <p>Bấm <b>Chọn thư mục khóa</b>, chọn thư mục. Trình duyệt hỏi "Cho phép xem tệp?" hay "Tải lên?" thì cứ đồng ý: file vẫn chỉ nằm trên máy bạn.
-            Thư mục có nhiều file Excel: Builder lấy file sửa gần nhất, đổi được ở ô chọn bên cạnh, hoặc bấm <b>Chọn file Excel khác</b>.</p></div>
-        <div><span class="n">2</span><b>Đặt pop-up và chương</b>
-          <p><b>Pop-up:</b> chọn video, phát tới chỗ muốn hỏi, bấm <b>Đặt pop-up tại đây</b>. Xong bấm <b>Copy bảng pop-up</b>, dán vào sheet <i>Câu hỏi</i> ở cột <i>Loại</i> của một dòng trống, rồi viết câu hỏi.</p>
-          <p><b>Chương:</b> phát tới đầu chương, gõ tên chương, bấm <b>Đặt chương tại đây</b> (hoặc Enter). Sửa tên ngay trong bảng nếu cần. Bấm <b>Copy bảng chương</b>, dán vào sheet <i>Chương</i> ở cột <i>Video số</i>: đủ 3 cột, không phải điền thêm.</p>
-          <p class="small">Các mốc đã đặt vẫn còn khi bấm Kiểm tra lại, nhưng mất khi tải lại trang: nhớ copy sang Excel.</p></div>
-        <div><span class="n">3</span><b>Kiểm tra</b>
-          <p>Builder đọc Excel và video, báo <span class="bad-chip">Lỗi (phải sửa)</span> kèm đúng sheet, đúng dòng, và <span class="warn-chip">Lưu ý</span> (không bắt buộc).
-            Sửa Excel, <b>lưu file</b>, bấm <b>🔄 Kiểm tra lại</b> (không phải chọn lại thư mục). Đọc kỹ bảng tóm tắt: số video, thời lượng, số câu, luật thi, loại khóa, chương.</p></div>
-        <div><span class="n">4</span><b>Xem thử</b>
-          <p>Bấm <b>Mở xem thử</b> để học đúng như học viên sẽ thấy. Nút <b>Xóa tiến độ</b> để học lại từ đầu. Hãy thử ít nhất: 1 pop-up, 1 chương, 1 tài liệu, làm bài thi 1 lần.</p></div>
-        <div><span class="n">5</span><b>Xuất gói SCORM</b>
-          <p>Bấm <b>Xuất gói SCORM</b>, chọn chỗ lưu. Khóa lớn (1–1,5 GB) mất khoảng nửa phút tới vài phút tùy máy; <b>đừng đóng trang</b> khi đang ghi.
-            Xong, Builder hiện bảng thông tin để tạo khóa trên Workday, có nút <b>Copy</b> từng dòng.</p></div>
-      </div>
-    </section>
-
-    <section class="sheet" id="b5">
-      <h2>5. Viết câu hỏi tốt</h2>
-      <h3>Pop-up (giữa video)</h3>
+    <details class="ref-d" id="r-video">
+      <summary>Yêu cầu về video, tài liệu, thư mục</summary>
       <ul>
-        <li>Mục đích là <b>giữ học viên tập trung</b>, không đánh đố. Không tính điểm; sai thì chọn lại tới khi đúng.</li>
-        <li>Hỏi đúng điều vừa nói trong 1–2 phút trước mốc. Đặt mốc ngay sau khi ý chính kết thúc.</li>
-        <li>Khoảng 1 câu cho mỗi 3–5 phút video, <b>cách nhau ít nhất 1 phút</b>. Không đặt trong 30 giây đầu hoặc ở cuối video.</li>
-        <li>2–3 phương án ngắn là đủ. Nên có <i>Giải thích</i>. Không dùng lại câu hỏi cuối khóa làm pop-up.</li>
+        <li><b>Video:</b> <b>.mp4</b> (H.264), nên <b>720p</b>, khoảng 400–700 MB mỗi giờ. Cả khóa dưới <b>4 GB</b>.</li>
+        <li><b>Tài liệu:</b> chỉ nhận <b>PDF</b>, nên dưới 50 MB. Học viên xem song song khi video chạy, không tải/in được.</li>
+        <li><b>Tên file:</b> không cần đổi. Ghi trong Excel có hay không có đuôi <code>.mp4</code>/<code>.pdf</code> đều được.</li>
+        <li><b>Hai file trùng tên</b> ở 2 thư mục con: ghi rõ thư mục trong Excel, ví dụ <code>02. An toan dien/bai.mp4</code>.</li>
+        <li><b>OneDrive:</b> file "chỉ trên mạng" không đọc được. Chuột phải › <i>Always keep on this device</i>.</li>
+      </ul>
+    </details>
+
+    <details class="ref-d" id="r-cauhoi">
+      <summary>Mẹo viết câu hỏi</summary>
+      <h3>Câu hỏi giữa video (pop-up)</h3>
+      <ul>
+        <li>Để giữ học viên tập trung, không đánh đố. Không tính điểm, sai thì chọn lại.</li>
+        <li>Hỏi điều vừa nói trong 1–2 phút trước. Khoảng 1 câu mỗi 3–5 phút, cách nhau ít nhất 1 phút.</li>
+        <li>Không đặt trong 30 giây đầu hay ở cuối video. 2–3 phương án ngắn, nên có giải thích.</li>
       </ul>
       <h3>Bài kiểm tra cuối khóa</h3>
       <ul>
-        <li>Thứ tự phương án được xáo mỗi lần thi: dùng được "Tất cả đều đúng", <b>tránh</b> viết "Cả A và B đều đúng".</li>
-        <li>Ngân hàng đề nên nhiều hơn số câu mỗi lần thi, để mỗi lượt có đề khác nhau.</li>
+        <li>Phương án được xáo mỗi lần thi: dùng được "Tất cả đều đúng", tránh "Cả A và B đều đúng".</li>
+        <li>Ngân hàng đề nên nhiều hơn số câu mỗi lần thi, để mỗi lượt có đề khác.</li>
       </ul>
-    </section>
+    </details>
 
-    <section class="sheet" id="b6">
-      <h2>6. Đưa lên Workday</h2>
-      <ol>
-        <li>Tạo khóa học trên Workday Learning theo quy trình của L&amp;OD.</li>
-        <li>Thêm bài học dạng <b>Packaged Content (SCORM)</b>, tải lên file <code>SCORM_&lt;Mã khóa&gt;.zip</code> (giữ nguyên file zip, không giải nén).</li>
-        <li>Điền thông tin theo bảng Builder hiện ở bước 5:
-          <i>Course Title</i> (Tên khóa), <i>Course Number</i> (Mã khóa), <i>Description</i> (Mô tả ngắn), <i>Total Course Duration</i> (phút).</li>
-        <li>Mở khóa trên Workday bằng tài khoản thử, học vài phút để chắc gói chạy đúng.</li>
-      </ol>
-      <p class="small">Chứng nhận hoàn thành do Workday cấp, không nằm trong gói. Khi học viên hết lượt thi, L&amp;OD đăng ký lại cho học viên trên Workday.</p>
-    </section>
-
-    <section class="sheet" id="loi">
-      <h2>7. Lỗi hay gặp và cách sửa</h2>
+    <details class="ref-d" id="r-loi">
+      <summary>Builder báo lỗi: sửa thế nào?</summary>
       <table class="errs">
         <thead><tr><th>Builder báo</th><th>Cách sửa</th></tr></thead>
         <tbody>
-          <tr><td>File Excel thiếu sheet …</td><td>Tải Excel mẫu ở bước 1, chép nội dung sang, giữ nguyên tên sheet</td></tr>
+          <tr><td>File Excel thiếu sheet …</td><td>Tải Excel mẫu, chép nội dung sang, giữ nguyên tên sheet</td></tr>
           <tr><td>Chưa có file Excel trong thư mục khóa</td><td>Lưu file Excel vào đúng thư mục khóa (hoặc bấm <b>Chọn file Excel khác</b>)</td></tr>
-          <tr><td>Không đọc được file Excel</td><td>File đang mở trong Excel: lưu lại rồi bấm Kiểm tra lại. Trình duyệt không phải Chrome/Edge: chọn lại thư mục</td></tr>
+          <tr><td>Không đọc được file Excel</td><td>Lưu file trong Excel rồi bấm Kiểm tra lại</td></tr>
           <tr><td>Mã khóa … chỉ được dùng chữ không dấu…</td><td>Bỏ dấu, bỏ khoảng trắng: <code>ATLD 001</code> → <code>ATLD-001</code></td></tr>
-          <tr><td>không tìm thấy video '…'. Có phải ý bạn là '…'?</td><td>Sửa tên trong Excel theo gợi ý, hoặc kiểm tra video có trong thư mục khóa chưa</td></tr>
-          <tr><td>có 2 file tên '…' ở các thư mục khác nhau</td><td>Ghi rõ thư mục trong Excel, ví dụ <code>02. B/bai.mp4</code></td></tr>
-          <tr><td>trình duyệt không mở được video '…'</td><td>Xuất lại video dạng <b>.mp4 (H.264)</b>, ví dụ bằng phần mềm dựng video hoặc HandBrake</td></tr>
-          <tr><td>mốc thời gian '…' phải có dạng phút:giây</td><td>Gõ dạng <code>01:30</code> (dấu hai chấm). Excel tự đổi thành giờ cũng không sao, Builder tự hiểu lại</td></tr>
-          <tr><td>mốc … vượt quá thời lượng video</td><td>Mốc nằm sau khi video kết thúc: kiểm tra lại "Video số" và mốc</td></tr>
-          <tr><td>'Video số' phải từ 1 đến …</td><td>Ghi số thứ tự bài (cột STT sheet Video), không ghi tên file</td></tr>
-          <tr><td>cần ít nhất phương án A, B… / chưa điền đáp án đúng</td><td>Điền phương án A, B; đáp án đúng là 1 chữ A–D</td></tr>
-          <tr><td>số câu mỗi lần thi (…) nhiều hơn ngân hàng đề</td><td>Thêm câu <code>CUOI KHOA</code>, hoặc giảm "Số câu mỗi lần thi"</td></tr>
-          <tr><td>không tìm thấy tài liệu / không phải file PDF</td><td>Kiểm tra tên file; xuất slide sang PDF (<i>File › Save As › PDF</i>)</td></tr>
-          <tr><td>Không đọc được tài liệu … OneDrive</td><td>Chuột phải thư mục › <i>Always keep on this device</i>, đợi tick xanh, bấm Kiểm tra lại</td></tr>
-          <tr><td>Tổng dung lượng … vượt giới hạn 4 GB</td><td>Nén video xuống 720p</td></tr>
-          <tr><td>'Loại khóa' phải là 'Bắt buộc' hoặc 'Tham khảo'</td><td>Chọn từ danh sách thả xuống trong ô, đừng gõ chữ khác</td></tr>
-          <tr><td>chưa điền tên chương</td><td>Điền cột <i>Tên chương</i> ở sheet Chương, hoặc xóa dòng đó</td></tr>
-          <tr><td>trình duyệt bạn đang dùng chỉ xuất được khóa dưới 500 MB</td><td>Mở Builder bằng Chrome hoặc Edge</td></tr>
+          <tr><td>không tìm thấy video '…'</td><td>Sửa tên theo gợi ý "Có phải ý bạn là…", hoặc kiểm tra video có trong thư mục chưa</td></tr>
+          <tr><td>trình duyệt không mở được video '…'</td><td>Xuất lại video dạng <b>.mp4 (H.264)</b></td></tr>
+          <tr><td>mốc thời gian '…' phải có dạng phút:giây</td><td>Gõ <code>01:30</code> (dấu hai chấm)</td></tr>
+          <tr><td>mốc … vượt quá thời lượng video</td><td>Kiểm tra lại "Video số" và mốc thời gian</td></tr>
+          <tr><td>'Video số' phải từ 1 đến …</td><td>Ghi số thứ tự bài, không ghi tên file</td></tr>
+          <tr><td>chưa điền đáp án đúng / cần ít nhất phương án A, B</td><td>Điền phương án A, B; đáp án là 1 chữ A–D</td></tr>
+          <tr><td>số câu mỗi lần thi nhiều hơn ngân hàng đề</td><td>Thêm câu <code>CUOI KHOA</code>, hoặc giảm "Số câu mỗi lần thi"</td></tr>
+          <tr><td>không phải file PDF</td><td>Xuất slide sang PDF (<i>File › Save As › PDF</i>)</td></tr>
+          <tr><td>Không đọc được tài liệu … OneDrive</td><td>Chuột phải thư mục › <i>Always keep on this device</i>, đợi tick xanh</td></tr>
+          <tr><td>vượt giới hạn 4 GB của Workday</td><td>Nén video xuống 720p</td></tr>
+          <tr><td>'Loại khóa' phải là 'Bắt buộc' hoặc 'Tham khảo'</td><td>Chọn từ danh sách thả xuống trong ô</td></tr>
+          <tr><td>chưa điền tên chương</td><td>Điền tên chương, hoặc xóa dòng đó</td></tr>
+          <tr><td>chỉ xuất được khóa dưới 500 MB</td><td>Mở Builder bằng Chrome hoặc Edge</td></tr>
         </tbody>
       </table>
-    </section>
+    </details>
 
-    <section class="sheet" id="hoi">
-      <h2>8. Câu hỏi thường gặp</h2>
+    <details class="ref-d" id="r-hoi">
+      <summary>Câu hỏi thường gặp</summary>
       <dl class="faq">
         <dt>Video có bị tải lên mạng không?</dt>
-        <dd>Không. Builder chạy hoàn toàn trên trình duyệt của bạn; video, tài liệu và đề thi chỉ nằm trên máy bạn và trong file zip bạn lưu.</dd>
-        <dt>Excel chưa điền xong có mở Builder được không?</dt>
-        <dd>Được. Cứ sửa dần, lưu, bấm Kiểm tra lại. Chưa có file Excel vẫn đặt pop-up, chương được ở bước 2.</dd>
+        <dd>Không. Builder chạy trên trình duyệt của bạn; video và đề thi chỉ nằm trên máy bạn và trong file .zip.</dd>
+        <dt>Excel chưa điền xong có dùng Builder được không?</dt>
+        <dd>Được. Cứ sửa dần, lưu, bấm Kiểm tra lại.</dd>
         <dt>Sửa khóa đã đưa lên Workday thế nào?</dt>
-        <dd>Sửa Excel trong thư mục khóa cũ, mở Builder, xuất lại và đưa gói mới lên Workday. Gói cũ không tự đổi. Khóa đang có người học dở thì báo L&amp;OD trước khi thay gói.</dd>
+        <dd>Sửa Excel trong thư mục cũ, xuất lại, đưa gói mới lên. Khóa đang có người học dở thì báo L&amp;OD trước khi thay.</dd>
         <dt>Học viên rớt hết lượt thì sao?</dt>
-        <dd>Bài thi khóa lại, Workday ghi nhận "không đạt", học viên thấy nội dung liên hệ L&amp;OD. L&amp;OD đăng ký lại khóa cho học viên trên Workday.</dd>
-        <dt>Muốn đổi luật học (ví dụ cho tua tới, tốc độ 3x)?</dt>
-        <dd>Luật học giống nhau cho mọi khóa, chỉ chọn được giữa Bắt buộc và Tham khảo. Cần luật khác: trao đổi với L&amp;OD Team Lead.</dd>
+        <dd>Bài thi khóa lại, học viên thấy nội dung liên hệ L&amp;OD. L&amp;OD đăng ký lại khóa cho học viên trên Workday.</dd>
+        <dt>Muốn luật học khác (cho tua tới, tốc độ 3x…)?</dt>
+        <dd>Luật học giống nhau cho mọi khóa, chỉ chọn Bắt buộc hoặc Tham khảo. Cần khác: trao đổi với L&amp;OD Team Lead.</dd>
       </dl>
-    </section>
+    </details>
   </main>
 
   <script type="module" src="./src/guide.js"></script>

@@ -56,7 +56,7 @@ Ba file `xlsx.js`, `course.js`, `package.js` dùng chung cho **cả** website (`
 
 Các file khác trong `builder/src/`:
 - `main.js`: giao diện 5 bước (chọn thư mục → đặt pop-up → kiểm tra → xem thử → xuất)
-- `builder/huong-dan.html` (+ `src/guide.js`, `src/guide.css`): trang hướng dẫn cho trainer, mở từ nút "📖 Hướng dẫn" ở đầu Builder. Là trang thứ 2 của Vite (khai báo trong `vite.config.js`). **Đổi giao diện Builder, cột Excel, thông báo lỗi hoặc luật học thì sửa trang này cho khớp.** Trang 1 khi in (Ctrl+P) là checklist
+- `builder/huong-dan.html` (+ `src/guide.js`, `src/guide.css`): trang hướng dẫn cho trainer, mở từ nút "📖 Hướng dẫn" ở đầu Builder. Là trang thứ 2 của Vite (khai báo trong `vite.config.js`). **Đổi giao diện Builder, cột Excel, thông báo lỗi hoặc luật học thì sửa trang này cho khớp.** Trang đi từ đơn giản tới chi tiết: 4 bước lớn → bấm từng bước xem việc cần làm → "Tra cứu khi cần" (đóng sẵn). Khi in, mọi mục tự mở ra
 - `popups.js`: bước 2, phát video và bấm lấy mốc pop-up
 - `preview.js`: bước 4, chạy Player thật trong khung
 - `util.js`: hàm nhỏ dùng chung; `defaults.json`: nội dung mặc định (câu liên hệ khi hết lượt)
