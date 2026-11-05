@@ -42,15 +42,20 @@ def make(demo, OUT):
   lines=[
   ("Cách dùng",""),
   ("1","Mỗi khóa học = 1 file Excel này. Đặt tên file theo mã khóa, ví dụ: ATLD-001.xlsx"),
-  ("Đóng gói","Điền xong, mở https://ctd-academy.github.io/scorm/ bằng Chrome hoặc Edge, chọn thư mục khóa (để file Excel này cùng thư mục với video). Thứ tự nên làm: điền Thông tin khóa + Video → đặt pop-up trên web, copy dán vào sheet Câu hỏi → viết câu hỏi → lưu, bấm Kiểm tra lại → Xuất gói SCORM"),
+  ("Đóng gói","Điền xong, mở https://ctd-academy.github.io/scorm/ bằng Chrome hoặc Edge, chọn thư mục khóa (để file Excel này cùng thư mục với video). Thứ tự nên làm: điền Thông tin khóa + Video → đặt pop-up (và chương, nếu có) trên web, copy dán vào sheet Câu hỏi (sheet Chương) → viết câu hỏi → lưu, bấm Kiểm tra lại → Xuất gói SCORM"),
   ("2","Ô nền vàng nhạt là ô cần điền. Không đổi tên sheet, không đổi tiêu đề cột."),
   ("3","Sheet 'Thông tin khóa': thông tin chung và luật bài kiểm tra của khóa."),
   ("4","Sheet 'Video': mỗi dòng là 1 bài (1 video), theo đúng thứ tự học. Tên file phải trùng tên file video trong thư mục khóa."),
   ("Tài liệu PDF","Không bắt buộc. Cột D sheet 'Video': tên file PDF (thường là slide) học viên xem song song khi nghe video. Để file trong thư mục khóa; nhiều file cách nhau bằng dấu ;. Học viên chỉ xem, không có nút tải/in"),
   ("5","Sheet 'Câu hỏi': gồm cả câu hỏi pop-up (giữa video) và câu hỏi bài kiểm tra cuối khóa."),
+  ("Chương","Không bắt buộc. Sheet 'Chương': mỗi dòng 1 chương (Video số, Mốc thời gian, Tên chương). Học viên thấy danh sách chương dưới video, bấm vào là nhảy tới đoạn đó. Đặt mốc trên web ở bước 2 rồi copy dán vào sheet này, hoặc gõ thẳng. Nên có 1 chương ở 00:00"),
   ("6","Dòng 2 ở mỗi sheet (chữ nghiêng) là VÍ DỤ. Xóa hoặc ghi đè khi nhập khóa thật."),
   ("",""),
-  ("Luật chơi cố định",""),
+  ("Loại khóa",""),
+  ("Bắt buộc","Mặc định (để trống cũng là Bắt buộc). Khóa học có luật học bên dưới, có thể có pop-up và bài kiểm tra."),
+  ("Tham khảo","Dành cho tài liệu hướng dẫn: mở bài nào cũng được, tua tự do, chuyển tab không dừng video, không có pop-up và bài kiểm tra (sheet 'Câu hỏi' bị bỏ qua). Học viên mở khóa là Workday ghi nhận hoàn thành. Tốc độ tối đa 2x, tài liệu PDF vẫn không tải/in được."),
+  ("",""),
+  ("Luật chơi khóa Bắt buộc",""),
   ("•","Học tuần tự: bài sau chỉ mở khi xem xong bài trước."),
   ("•","Video chỉ tua lại phần đã xem, không tua tới. Tốc độ tối đa 2x. Rời trang/chuyển tab thì video tự dừng."),
   ("•","Pop-up không tính điểm. Trả lời sai thì chọn lại tới khi đúng (không phải xem lại video). Trả lời đúng được ghi nhận ngay."),
@@ -77,7 +82,7 @@ def make(demo, OUT):
   ("•","Không dùng lại câu hỏi cuối khóa làm pop-up"),
   ]
   for i,(a,b) in enumerate(lines,3):
-      g.cell(row=i,column=1,value=a).font=bold if b=="" or a in("Đóng gói","Tài liệu PDF","Loại","Video số","Mốc thời gian","Phương án","Đáp án đúng","Giải thích","Xáo phương án","Gợi ý") else body
+      g.cell(row=i,column=1,value=a).font=bold if b=="" or a in("Đóng gói","Tài liệu PDF","Chương","Bắt buộc","Tham khảo","Loại","Video số","Mốc thời gian","Phương án","Đáp án đúng","Giải thích","Xáo phương án","Gợi ý") else body
       if b=="" and a: g.cell(row=i,column=1).font=Font(name=F,size=11,bold=True,color=NAVY)
       c=g.cell(row=i,column=2,value=b); c.font=body; c.alignment=wrap
   g.column_dimensions["A"].width=16; g.column_dimensions["B"].width=110
@@ -98,6 +103,7 @@ def make(demo, OUT):
   ("Hiện đáp án sau khi nộp","Có" if demo else "Không","Có / Không"),
   ("Nội dung liên hệ khi hết lượt",DEFAULTS["contact"],"Học viên thấy nội dung này khi hết lượt"),
   ("File logo (tùy chọn)","","Tên file logo đặt trong thư mục khóa. Để trống = dùng logo Coteccons trắng có sẵn"),
+  ("Loại khóa","Bắt buộc","Bắt buộc = học tuần tự, chặn tua tới, có pop-up/bài kiểm tra · Tham khảo = tài liệu hướng dẫn: xem tự do, không kiểm tra, mở là hoàn thành"),
   ]
   for i,(a,b,c) in enumerate(rows,2):
       t.cell(row=i,column=1,value=a).font=bold
@@ -116,6 +122,7 @@ def make(demo, OUT):
   t.cell(row=r+5,column=1,value="Lưu ý: số liệu tự động chỉ đếm từ dòng 3 trở đi (dòng 2 là ví dụ ở sheet Video và Câu hỏi).").font=Font(name=F,size=9,italic=True,color="636468")
   t.column_dimensions["A"].width=30; t.column_dimensions["B"].width=60; t.column_dimensions["C"].width=50
   dv=DataValidation(type="list",formula1='"Có,Không"',allow_blank=False); t.add_data_validation(dv); dv.add("B9")
+  dk=DataValidation(type="list",formula1='"Bắt buộc,Tham khảo"',allow_blank=True); t.add_data_validation(dk); dk.add("B12")
   for addr,lo,hi in (("B5",0,100),("B6",1,20),("B7",0,500),("B8",0,600)):
       d=DataValidation(type="whole",operator="between",formula1=str(lo),formula2=str(hi),showErrorMessage=True,errorTitle="Giá trị không hợp lệ",error=f"Nhập số nguyên từ {lo} đến {hi}")
       t.add_data_validation(d); d.add(addr)
@@ -168,6 +175,23 @@ def make(demo, OUT):
   d1=DataValidation(type="list",formula1='"POPUP,CUOI KHOA"',allow_blank=True); q.add_data_validation(d1); d1.add("A3:A2000")
   d2=DataValidation(type="list",formula1='"A,B,C,D"',allow_blank=True); q.add_data_validation(d2); d2.add("I3:I2000")
   q["C1"].comment=Comment("Định dạng phút:giây, ví dụ 01:30. Chỉ điền cho POPUP.","L&OD")
+
+  # ---------------- Chương (không bắt buộc)
+  ch=wb.create_sheet("Chương")
+  header(ch,1,["Video số","Mốc thời gian (mm:ss)","Tên chương"])
+  for j,val in enumerate([1,"00:00","(Ví dụ) Giới thiệu"],1):
+      c=ch.cell(row=2,column=j,value=val); c.font=Font(name=F,size=10,italic=True,color="636468")
+  chaps=[[1,"00:00","Mở đầu"],[1,"00:20","An toàn là trên hết"],[1,"00:42","Trách nhiệm của mỗi người"],
+         [3,"00:00","Mối nguy là gì"],[3,"00:30","Khi phát hiện mối nguy"]] if demo else []
+  for i,row in enumerate(chaps,3):
+      for j,val in enumerate(row,1):
+          c=ch.cell(row=i,column=j,value=val); c.font=body; c.fill=inp; c.border=box
+  for i in range(len(chaps)+3,300):
+      for j in range(1,4): ch.cell(row=i,column=j).fill=inp; ch.cell(row=i,column=j).border=box
+  for i in range(2,300): ch.cell(row=i,column=2).number_format="@"
+  for j,w in enumerate([9,13,60],1): ch.column_dimensions[chr(64+j)].width=w
+  ch.freeze_panes="A3"
+  ch["B1"].comment=Comment("Định dạng phút:giây, ví dụ 03:20. Đặt mốc trên web (bước 2) rồi copy dán vào đây cho nhanh.","L&OD")
 
   os.makedirs(os.path.dirname(os.path.abspath(OUT)), exist_ok=True)
   wb.save(OUT)

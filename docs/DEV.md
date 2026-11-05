@@ -43,7 +43,7 @@ bash tools/setup_assets.sh        # tạo lại font, PDF.js, Excel mẫu, video
 Thư mục khóa (Excel + video + PDF)
    │
    ├─ builder/src/xlsx.js      đọc .xlsx → { tên sheet: rows[dòng][cột] } (dòng, cột tính từ 1 như Excel)
-   ├─ builder/src/course.js    readCourse(): đọc 3 sheet, tìm file, kiểm tra lỗi → { course, errors, warnings, files }
+   ├─ builder/src/course.js    readCourse(): đọc 3 sheet (+ sheet Chương nếu có), tìm file, kiểm tra lỗi → { course, errors, warnings, files }
    ├─ builder/src/package.js   writePackage(): course.js + imsmanifest.xml + player/ + video/PDF/logo
    └─ builder/src/zip.js       ghi zip từng đoạn xuống ổ cứng (khóa 1,5 GB không giữ trong RAM)
    │
@@ -93,7 +93,7 @@ builder/tests/             test logic (Node), golden/ATLD-DEMO.json = gói mẫu
 - Chạy `python3 tools/make_template.py` để Excel mẫu và Excel demo dùng câu mới.
 - Câu này chỉ là mặc định: khóa nào ghi riêng ở sheet "Thông tin khóa" thì dùng câu của khóa đó. Gói đã xuất trước đây không tự đổi, phải xuất lại.
 
-**Đổi một luật học trong Player** (tua, tốc độ, pop-up, bài thi)
+**Đổi một luật học trong Player** (tua, tốc độ, pop-up, bài thi, chương, khóa Tham khảo)
 - Sửa `player/player.js`. Luật nằm ở đầu file và theo từng phần (video, tài liệu PDF, bài kiểm tra).
 - Thêm hoặc sửa test trong `tests/test_player.py`.
 - Đừng thêm dữ liệu lớn vào `cmi.suspend_data` (SCORM 1.2 giới hạn 4.096 ký tự).
@@ -139,6 +139,10 @@ Với 3 file này: sửa ít nhất có thể, thêm test cho đúng trường h
 - **Xem thử trong Builder:** video dùng Blob URL (tua bình thường). `player/preview.html` do `copy-assets.mjs` tạo từ `player/index.html`, đọc dữ liệu khóa từ trang Builder.
 - **Test xuất khóa lớn** (`LARGE=1 bash tests/run_all.sh`) cần ~5 GB ổ trống và dùng hồ sơ trình duyệt lưu trên đĩa (hồ sơ mặc định của Playwright nằm trong RAM).
 - **Sự kiện của video cũ:** khi rời bài, video cũ vẫn bắn `pause`/`ratechange` sau khi biến `vid` đã đổi sang video mới (hoặc `null` khi vào bài thi). Trong `renderVideo` của `player.js`, gắn sự kiện video bằng hàm `on(...)` (chỉ chạy khi đúng video đang hiện), không dùng thẳng `vid.addEventListener`.
+- **Hai loại khóa (từ 05/11/2026):** dòng "Loại khóa" ở **dòng 12** sheet Thông tin khóa (để ở cuối cho khỏi dời các dòng cũ). `readCourse()` chỉ đọc dòng 2–12: thêm dòng mới ở sheet này thì phải nới vòng lặp. Để trống = Bắt buộc, để Excel mẫu cũ chạy như trước. Khóa Tham khảo → `settings.reference = true`: `course.js` **không đọc** sheet Câu hỏi (nên không báo lỗi ở đó, chỉ cảnh báo số câu bị bỏ qua) và xuất `popups: []`, `quiz: []`. Player cũng tự bỏ pop-up/bài thi khi `reference` bật, phòng gói sửa tay.
+- **Khóa Tham khảo trong Player:** báo `completed` ngay khi mở (`pushStatus`); `cmi.core.exit` luôn là `suspend` (khác khóa Bắt buộc) để lần sau mở lại đúng bài, đúng chỗ. Ẩn % hoàn thành bằng class `ref` trên `<body>`.
+- **Chương (từ 05/11/2026):** sheet "Chương" **không bắt buộc** (thiếu sheet = khóa không có chương, không báo lỗi). Builder tự xếp theo thời gian; trùng mốc thì giữ dòng đầu và cảnh báo. Trong gói: `videos[i].chapters = [{ time, title }]`, chỉ có khi video có chương. Player: khóa Bắt buộc dùng **cùng mốc "đã xem tới"** (`maxW`) với luật chặn tua để làm mờ chương chưa xem; sửa luật tua thì sửa cả `chapterLocked()`.
+- **Test khóa Tham khảo:** `tests/test_player.py` chép gói demo sang `out/test/course-ref/`, bật `reference` trong `course.js` rồi mở `lms.html?course=course-ref`.
 - **Pop-up (từ 03/11/2026):** sai thì chọn lại tới khi đúng, không lùi video. Đúng thì lưu ngay vào `suspend_data`; câu có giải thích chờ học viên bấm "Tiếp tục xem", câu không có thì video tự chạy sau 1,5 giây.
 - **Excel bản cũ của Alex:** công thức trong hướng dẫn viết bằng dấu `;`.
 
