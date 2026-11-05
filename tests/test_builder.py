@@ -126,8 +126,12 @@ with sync_playwright() as p:
     gp.on("response", lambda r: g404.append(r.url) if r.status >= 400 else None)
     gp.on("pageerror", lambda e: g404.append(str(e)))
     gp.goto(URL + "huong-dan.html"); gp.wait_for_load_state("networkidle")
-    check("Hướng dẫn: mở được, có checklist và 8 mục chi tiết",
-          gp.locator("#tom-tat .check li").count() >= 10 and all(gp.locator(f"#{i}").count() == 1 for i in ("b1", "b2", "b3", "b4", "b5", "b6", "loi", "hoi")))
+    check("Hướng dẫn: mở được, đầu trang là 4 bước lớn, chi tiết đóng sẵn",
+          gp.locator("#tom-tat .big4 li").count() == 4 and gp.locator("details").count() == 10 and gp.locator("details[open]").count() == 0)
+    gp.click("#s3 summary")             # mở bước 3
+    gp.click("#s3 a[href='#r-loi']")    # bấm "Cách sửa lỗi hay gặp"
+    gp.wait_for_selector("#r-loi[open]", timeout=3000)
+    check("Hướng dẫn: bấm link tra cứu thì mở đúng mục", gp.locator("#r-loi[open]").count() == 1)
     tpl = gp.evaluate("fetch(document.querySelector('#tom-tat a[download]').href).then(r => r.ok && r.headers.get('content-length') > 1000)")
     check("Hướng dẫn: link tải Excel mẫu chạy", tpl and not g404, g404)
     gp.set_viewport_size({"width": 390, "height": 844})
