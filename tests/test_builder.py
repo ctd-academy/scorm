@@ -119,6 +119,21 @@ with sync_playwright() as p:
     page.on("response", lambda r: errors.append("404 " + r.url) if r.status >= 400 else None)
     page.goto(URL)
 
+    # ---- Trang hướng dẫn cho trainer
+    check("Có nút Hướng dẫn ở đầu trang", page.get_attribute("#guideLink", "href") == "./huong-dan.html")
+    gp = b.new_page(viewport={"width": 1366, "height": 768})
+    g404 = []
+    gp.on("response", lambda r: g404.append(r.url) if r.status >= 400 else None)
+    gp.on("pageerror", lambda e: g404.append(str(e)))
+    gp.goto(URL + "huong-dan.html"); gp.wait_for_load_state("networkidle")
+    check("Hướng dẫn: mở được, có checklist và 8 mục chi tiết",
+          gp.locator("#tom-tat .check li").count() >= 10 and all(gp.locator(f"#{i}").count() == 1 for i in ("b1", "b2", "b3", "b4", "b5", "b6", "loi", "hoi")))
+    tpl = gp.evaluate("fetch(document.querySelector('#tom-tat a[download]').href).then(r => r.ok && r.headers.get('content-length') > 1000)")
+    check("Hướng dẫn: link tải Excel mẫu chạy", tpl and not g404, g404)
+    gp.set_viewport_size({"width": 390, "height": 844})
+    check("Hướng dẫn: điện thoại không tràn ngang", gp.evaluate("document.documentElement.scrollWidth <= window.innerWidth"))
+    gp.close()
+
     check("Bước 2, 3 khóa khi chưa chọn thư mục", all("locked" in page.get_attribute(f"#step{i}", "class") for i in (2, 3)))
     check("Chưa chọn thư mục: chưa hiện thanh Kiểm tra lại", page.locator("#topbar").is_hidden())
     page.set_input_files("#folder", DEMO)  # chỉ chọn thư mục: Builder tự tìm ATLD-DEMO.xlsx

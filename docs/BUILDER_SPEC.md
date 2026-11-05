@@ -128,7 +128,7 @@ Quy tắc đọc Excel: xem `readCourse()` trong `builder/src/course.js`. Dòng 
 | M3.1 ✅ | Luồng mới: chọn thư mục 1 lần, tự tìm Excel, Kiểm tra lại; đặt pop-up trước kiểm tra | Đặt pop-up được khi chưa có Excel; sửa Excel rồi Kiểm tra lại đọc bản mới mà không chọn lại |
 | M3.2 ✅ | Tài liệu PDF theo từng video (cột D sheet Video), xem song song với video bằng PDF.js | Kiểm tra báo sai tên/không phải PDF; xem thử mở được PDF; gói tương đương `build_scorm.py`; 43/43 test Player |
 | M3.3 ✅ | Loại khóa Tham khảo + chương theo từng video (sheet Chương, đặt chương ở bước 2) | Khóa Tham khảo: tua tự do, mở là completed; chương: bấm nhảy đúng mốc, khóa Bắt buộc chặn chương chưa xem; Excel mẫu cũ vẫn đọc được; 62/62 test Player |
-| M4 | Deploy + hướng dẫn 1 trang | Link chạy trên Chrome/Edge (Windows và Mac); `docs/HUONG_DAN_TRAINER.md` ≤ 1 trang |
+| M4 🟡 | Deploy + hướng dẫn cho trainer | Hướng dẫn là trang `huong-dan.html` trong Builder (Alex chọn 05/11/2026 thay cho file Markdown): 1 trang checklist + phần chi tiết, in được. Còn: thử trên Chrome/Edge (Windows và Mac), trainer đọc thử và góp ý |
 
 ## 8. Việc Alex cần cung cấp
 

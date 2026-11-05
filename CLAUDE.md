@@ -9,7 +9,7 @@ Coteccons (tập đoàn xây dựng, ~4.000 nhân viên) chuyển ~150 khóa e-l
 | Phần | Trạng thái | Vai trò |
 |---|---|---|
 | `player/` | ✅ Xong, 62/62 test đạt (có tài liệu PDF, chương, khóa Tham khảo) | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
-| `builder/` | 🟡 **M1–M3 xong** (kiểm tra lỗi, đặt pop-up, xem thử, xuất zip SCORM), còn M4 (hướng dẫn 1 trang cho trainer) | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
+| `builder/` | 🟡 **M1–M3 xong** (kiểm tra lỗi, đặt pop-up, xem thử, xuất zip SCORM); M4: đã có trang hướng dẫn cho trainer (`builder/huong-dan.html`), còn trainer đọc thử + thử Edge | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
 
 Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&OD, không phải lập trình viên.
 
@@ -41,4 +41,4 @@ Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&O
 
 ## Định nghĩa "xong" cho mỗi thay đổi
 
-Xem `docs/DEV.md` mục 9. Tóm tắt: `bash tests/run_all.sh` đạt hết (22 test logic, 62 test Player, 90 test giao diện); gói khóa demo khớp gói mẫu; thử trên Chrome và Edge.
+Xem `docs/DEV.md` mục 9. Tóm tắt: `bash tests/run_all.sh` đạt hết (22 test logic, 62 test Player, 94 test giao diện); gói khóa demo khớp gói mẫu; thử trên Chrome và Edge.
