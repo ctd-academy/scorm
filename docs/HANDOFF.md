@@ -1,7 +1,9 @@
 # HANDOFF – Dự án Coteccons SCORM Builder
 
-> Cập nhật: 28/10/2026 · Chủ dự án: Alex (L&OD Team Lead, Coteccons)
-> Bản này đi kèm repo. Spec Builder web: `docs/BUILDER_SPEC.md`. Hướng dẫn cho người phát triển: `docs/DEV.md`. Hướng dẫn cho Claude Code: `CLAUDE.md`.
+> Cập nhật: 05/11/2026 · Chủ dự án: Alex (L&OD Team Lead, Coteccons)
+> Bản này đi kèm repo. Spec Builder web: `docs/BUILDER_SPEC.md`. Hướng dẫn cho người phát triển: `docs/DEV.md`. Hướng dẫn cho Claude Code: `CLAUDE.md`. Hướng dẫn cho trainer: trang https://ctd-academy.github.io/scorm/huong-dan.html (nguồn `builder/huong-dan.html`).
+
+**Tóm tắt tình trạng (05/11/2026):** Player và Builder đã chạy trên https://ctd-academy.github.io/scorm/, có thêm loại khóa Tham khảo, chương và trang hướng dẫn cho trainer. Toàn bộ test tự động đạt. **Chưa dùng thật:** còn chờ pilot trên Workday sandbox, thử Edge, trainer đọc thử hướng dẫn (mục 11).
 
 **Ký hiệu trạng thái:** ✅ Đã chốt · 🟡 Đề xuất, chờ Alex chốt · ❓ Còn mở, cần hỏi Workday/IT
 
@@ -73,6 +75,7 @@
 | 19 | **Một động cơ đóng gói** dùng chung cho website và dòng lệnh (`builder/scripts/build-scorm.mjs`); bỏ bản Python `build_scorm.py`. GitHub tự chạy toàn bộ test (logic, Player, giao diện) mỗi lần đổi code (28/10) | ✅ |
 | 20 | **Hai loại khóa** (05/11/2026), chọn ở dòng "Loại khóa" sheet Thông tin khóa. **Bắt buộc** (mặc định, để trống cũng vậy): luật #4–#9 như trên. **Tham khảo** (tài liệu hướng dẫn): mở bài nào cũng được, tua tự do, chuyển tab không dừng, không pop-up, không bài thi, **mở khóa là báo `completed`**. Vẫn tối đa 2x, tài liệu PDF vẫn không tải/in | ✅ |
 | 21 | **Chương** theo từng video (05/11/2026, sheet "Chương", không bắt buộc): danh sách dưới video, bấm để nhảy tới đoạn đó. Khóa Bắt buộc chỉ bấm được chương đã xem tới. Nhập giống pop-up: đặt mốc + gõ tên trên Builder bước 2, copy dán vào Excel. **Không làm** vạch chương trên thanh tua (phải tự vẽ lại bộ điều khiển video) và thanh chương riêng: để sau nếu cần | ✅ |
+| 22 | **Hướng dẫn cho trainer là trang web trong Builder** (05/11/2026, thay cho file Markdown 1 trang): nút "📖 Hướng dẫn" ở đầu Builder. Đi từ đơn giản tới chi tiết: 4 bước lớn → bấm từng bước xem việc cần làm → "Tra cứu khi cần" (đóng sẵn). In được. Sửa Builder, cột Excel, thông báo lỗi hay luật học thì sửa trang này cho khớp | ✅ |
 
 ## 5. Đã xây xong: Player v1
 
@@ -100,7 +103,7 @@
 | `cmi.suspend_data` | JSON gọn: `{v:[[đã xem xa nhất, vị trí, xong]], p:[id pop-up đã đúng], a:số lượt, s:điểm cao nhất, q:0/1/2}` (giới hạn 4.096 ký tự) |
 | `cmi.core.session_time`, `cmi.core.exit` | exit = "suspend" khi chưa xong, rỗng khi đạt/hết lượt. Khóa Tham khảo luôn "suspend" để lần sau mở lại đúng bài, đúng chỗ |
 
-**Đã kiểm tra:** 43/43 tình huống tự động (26 luật học + 17 tài liệu PDF) trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud**: ổn.
+**Đã kiểm tra:** 62/62 tình huống tự động (luật học, tài liệu PDF, chương, khóa Tham khảo) trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud** (bản trước khi có chương và khóa Tham khảo): ổn. **Chưa thử trên SCORM Cloud/Workday:** khóa Tham khảo (báo `completed` ngay khi mở, kèm exit = "suspend") và chương.
 
 **Phát hiện khi test:** tua lại video chỉ đúng khi máy chủ hỗ trợ tải từng phần (HTTP Range). Workday và SCORM Cloud thuộc loại này.
 
@@ -118,9 +121,11 @@ Mỗi khóa = 1 file Excel chép từ **template chuẩn, trống** `templates/M
 
 ## 7. Builder web v1
 
-Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư mục khóa → đặt pop-up → kiểm tra → xem thử → xuất), xử lý hoàn toàn trên trình duyệt. Cùng code đóng gói với lệnh `builder/scripts/build-scorm.mjs`.
+Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư mục khóa → đặt pop-up và chương → kiểm tra → xem thử → xuất), xử lý hoàn toàn trên trình duyệt. Cùng code đóng gói với lệnh `builder/scripts/build-scorm.mjs`. Có trang hướng dẫn cho trainer (quyết định #22).
 
-**Tiến độ:** M1 ✅ (chọn file, đọc Excel + thư mục video, màn hình kiểm tra lỗi) · M2 ✅ (xuất zip SCORM streaming, thông tin Workday; khóa 1,5 GB xuất trong ~30 giây, RAM tăng ~150 MB) · M3 ✅ (đặt pop-up bằng nút bấm, xem thử bằng Player thật; sau đó đổi luồng: chọn thư mục 1 lần, tự tìm Excel, nút Kiểm tra lại, đặt pop-up trước bước kiểm tra) · M4 🟡 hướng dẫn trainer: trang `huong-dan.html` trong Builder (nút "📖 Hướng dẫn"), chờ trainer đọc thử. Deploy tự động lên GitHub Pages khi `main` thay đổi.
+**Test tự động** (`bash tests/run_all.sh`, GitHub chạy lại mỗi lần đổi code): 22 test logic · 62 test Player · 95 test giao diện Builder.
+
+**Tiến độ:** M1 ✅ (chọn file, đọc Excel + thư mục video, màn hình kiểm tra lỗi) · M2 ✅ (xuất zip SCORM streaming, thông tin Workday; khóa 1,5 GB xuất trong ~30 giây, RAM tăng ~150 MB) · M3 ✅ (đặt pop-up bằng nút bấm, xem thử bằng Player thật; sau đó đổi luồng: chọn thư mục 1 lần, tự tìm Excel, nút Kiểm tra lại, đặt pop-up trước bước kiểm tra) · M3.3 ✅ (05/11: loại khóa Tham khảo, chương theo từng video) · M4 🟡 hướng dẫn trainer: đã lên web (`huong-dan.html`, nút "📖 Hướng dẫn"), chờ trainer đọc thử và thử Edge. Deploy tự động lên GitHub Pages khi `main` thay đổi.
 
 ## 8. Việc còn mở cần hỏi Workday / IT ❓
 
@@ -138,7 +143,7 @@ Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư m�
 
 ## 9. Lộ trình và ước tính
 
-**Xây công cụ (~6 tuần):** Thiết kế (xong) → Player v1 (xong) → Builder web v1 (~1 tuần) → Pilot 3 khóa trên Workday sandbox (2 tuần: 1 khóa ngắn, 1 khóa dài nhất ~120 phút, 1 khóa nhiều câu hỏi) → Chốt v1, hướng dẫn 1 trang, đào tạo team (1 tuần).
+**Xây công cụ (~6 tuần):** Thiết kế (xong) → Player v1 (xong) → Builder web v1 (~1 tuần) → Pilot 3 khóa trên Workday sandbox (2 tuần: 1 khóa ngắn, 1 khóa dài nhất ~120 phút, 1 khóa nhiều câu hỏi) → Chốt v1, hướng dẫn cho trainer (đã có bản đầu), đào tạo team (1 tuần).
 
 **Kịch bản 1 – chuyển 150 khóa:** kiểm kê và sàng lọc → pilot → chuyển hàng loạt ~1,5–2,5 giờ/khóa (≈225–375 giờ công; 4 trainer × ~10 giờ/tuần → 6–9 tuần) → nhập lịch sử học. Tổng khoảng 3 tháng. Ưu tiên khóa bắt buộc/an toàn.
 
@@ -151,6 +156,7 @@ Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư m�
 ## 10. Rủi ro đang theo dõi
 
 - Workday không chặn được lần làm thứ 4 (rủi ro lớn nhất)
+- Khóa Tham khảo báo `completed` nhưng exit = "suspend": chuẩn SCORM cho phép, cần xem Workday hiển thị đúng "hoàn thành" và mở lại đúng chỗ
 - Xuất file lớn trên trình duyệt
 - App Workday mobile với SCORM
 - Trình xem PDF nạp bằng `import()` + Web Worker: cần thử trên SCORM Cloud / Workday sandbox (chính sách bảo mật CSP của LMS có thể chặn)
@@ -158,8 +164,10 @@ Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư m�
 
 ## 11. Bước tiếp theo
 
-1. Xây Builder web v1 theo `docs/BUILDER_SPEC.md` (Claude Code), deploy lên GitHub Pages
-2. ~~Alex thử gói demo trên SCORM Cloud~~ ✅ · ~~logo + liên hệ L&OD~~ ✅
-3. Alex dùng khóa thật để pilot (khóa nằm trên máy Alex, đóng gói bằng Builder ngay trên máy)
-4. Hỏi Workday các câu ở mục 8
-5. Pilot 3 khóa thật trên Workday sandbox
+1. ~~Xây Builder web v1, deploy lên GitHub Pages~~ ✅ · ~~Alex thử gói demo trên SCORM Cloud~~ ✅ · ~~logo + liên hệ L&OD~~ ✅ · ~~loại khóa Tham khảo, chương~~ ✅ · ~~trang hướng dẫn trainer~~ ✅
+2. Thử Builder trên **Edge** (mới thử tự động trên Chrome/Chromium)
+3. Đưa 1 gói **khóa Tham khảo** lên SCORM Cloud hoặc Workday sandbox: báo hoàn thành ngay khi mở? mở lại đúng bài đang xem?
+4. 1–2 trainer **đọc thử trang hướng dẫn** và đóng gói 1 khóa nhỏ theo đó; chỉnh chỗ còn rối
+5. Alex dùng khóa thật để pilot (khóa nằm trên máy Alex, đóng gói bằng Builder ngay trên máy)
+6. Hỏi Workday các câu ở mục 8
+7. Pilot 3 khóa thật trên Workday sandbox; sau đó **bổ sung các bước cụ thể trên Workday** vào trang hướng dẫn (mục "Đưa lên Workday" hiện chỉ ghi chung)
