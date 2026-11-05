@@ -28,4 +28,4 @@ node builder/scripts/build-scorm.mjs demo-course/ATLD-DEMO.xlsx demo-course out 
 
 Cần: Node 20+, Python 3 (`pip install -r tests/requirements.txt`), ffmpeg.
 
-Dùng Claude Code: mở terminal ở thư mục repo, chạy `claude`. Claude tự đọc `CLAUDE.md`.
+Làm tiếp bằng trợ lý AI: luật chung ở [`AGENTS.md`](AGENTS.md). **GitHub Copilot**: xem [`docs/DEV.md` mục 10](docs/DEV.md#10-làm-tiếp-bằng-github-copilot) (giao issue cho Copilot hoặc dùng Copilot Chat trong VS Code). **Claude Code**: mở terminal ở thư mục repo, chạy `claude` (tự đọc `CLAUDE.md`).

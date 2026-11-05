@@ -1,97 +1,24 @@
+// Trang chính của Builder: 5 bước (chọn thư mục → đặt pop-up → kiểm tra → xem thử → xuất).
+// File này chỉ điều phối các bước; phần việc nằm ở:
+//   folder.js  đọc thư mục, thời lượng video   course.js  đọc Excel, kiểm tra lỗi
+//   popups.js  bước 2   preview.js  bước 4   export.js  bước 5
 import "./style.css";
 import { readXlsx } from "./xlsx.js";
 import { readCourse, formatDuration } from "./course.js";
-import { writePackage, memorySink, diskSink } from "./package.js";
+import { readFolder, urlOf, dropUrls, folderVideos, videoDuration } from "./folder.js";
 import { renderPopupStep } from "./popups.js";
 import { renderPreviewStep, closePreview } from "./preview.js";
-import { VIDEO_EXT, ignored, esc, mmss } from "./util.js";
+import { renderExportStep, closeExport, isExporting } from "./export.js";
+import { VIDEO_EXT, esc, mmss, mb } from "./util.js";
 
 const $ = (id) => document.getElementById(id);
-const mb = (n) => (n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2) + " GB" : Math.max(0.1, n / 1024 ** 2).toFixed(1) + " MB");
 
-// source: { kind: "handle", dir } (Chrome/Edge: đọc lại thư mục mỗi lần Kiểm tra lại)
-//      or { kind: "input", files } (trình duyệt khác: phải chọn lại thư mục sau khi sửa Excel)
+// source: thư mục khóa đang chọn, xem readFolder() trong folder.js
+// excelChoice: đường dẫn file Excel đang dùng khi thư mục có nhiều file Excel
 // excelOverride: file Excel chọn riêng ({ handle } hoặc { file }), null = tự tìm trong thư mục
-const state = { source: null, folderName: "", excelChoice: "", excelOverride: null, logo: null, result: null, exporting: false };
-const MEMORY_LIMIT = 500 * 1024 ** 2; // trình duyệt không ghi thẳng xuống ổ cứng được thì chỉ xuất khóa nhỏ
-const durationCache = new Map(); // khóa file -> giây (null nếu không mở được)
-let runId = 0;
-
-// Mỗi lần Kiểm tra lại, trình duyệt trả File mới cho cùng một file: nhận diện file theo đường dẫn + kích thước + giờ sửa
-const fileKey = (e) => `${e.path}|${e.file.size}|${e.file.lastModified}`;
-
-// Blob URL để phát video ngay từ máy người dùng (bước 2, 4); bỏ khi chọn thư mục khác
-const blobUrls = new Map();
-function urlOf(entry) {
-  const k = fileKey(entry);
-  if (!blobUrls.has(k)) blobUrls.set(k, URL.createObjectURL(entry.file));
-  return blobUrls.get(k);
-}
-function dropUrls() {
-  blobUrls.forEach((u) => URL.revokeObjectURL(u));
-  blobUrls.clear();
-}
-
-// Mọi file trong thư mục khóa, kể cả thư mục con; path tính từ thư mục khóa
-function folderEntries(files) {
-  return files
-    .map((f) => ({ path: (f.webkitRelativePath || f.name).split("/").slice(1).join("/") || f.name, name: f.name, size: f.size, file: f }))
-    .filter((e) => !e.path.split("/").some(ignored));
-}
-
-async function walk(dir, prefix = "", out = []) {
-  for await (const h of dir.values()) {
-    if (ignored(h.name)) continue;
-    if (h.kind === "directory") await walk(h, prefix + h.name + "/", out);
-    else {
-      const file = await h.getFile();
-      out.push({ path: prefix + h.name, name: h.name, size: file.size, file });
-    }
-  }
-  return out;
-}
-
-async function readFolder() {
-  const src = state.source;
-  if (src.kind === "input") return folderEntries(src.files);
-  if (src.dir.queryPermission && (await src.dir.queryPermission({ mode: "read" })) !== "granted") {
-    if ((await src.dir.requestPermission({ mode: "read" })) !== "granted") throw new Error("permission");
-  }
-  return walk(src.dir);
-}
-
-// Video trong thư mục, theo thứ tự thư mục (01., 02., … 10.); tên file ghi như trong Excel
-function folderVideos(folder) {
-  const names = new Map();
-  folder.forEach((f) => names.set(f.name.toLowerCase(), (names.get(f.name.toLowerCase()) || 0) + 1));
-  return folder
-    .filter((f) => VIDEO_EXT.test(f.name))
-    .sort((a, b) => a.path.localeCompare(b.path, "vi", { numeric: true, sensitivity: "base" }))
-    .map((f) => ({ title: f.name.replace(/\.[^.]+$/, ""), path: f.path, url: urlOf(f), file: names.get(f.name.toLowerCase()) > 1 ? f.path : f.name }));
-}
-
-function videoDuration(entry) {
-  const k = fileKey(entry);
-  if (durationCache.has(k)) return Promise.resolve(durationCache.get(k));
-  return new Promise((resolve) => {
-    const v = document.createElement("video");
-    const url = URL.createObjectURL(entry.file);
-    const done = (d) => {
-      clearTimeout(timer);
-      v.removeAttribute("src");
-      v.load();
-      URL.revokeObjectURL(url);
-      durationCache.set(k, d);
-      resolve(d);
-    };
-    const timer = setTimeout(() => done(null), 20000);
-    v.preload = "metadata";
-    v.muted = true;
-    v.onloadedmetadata = () => done(Number.isFinite(v.duration) && v.duration > 0 ? v.duration : null);
-    v.onerror = () => done(null);
-    v.src = url;
-  });
-}
+// logo: file logo chọn riêng ở bước 1
+const state = { source: null, folderName: "", excelChoice: "", excelOverride: null, logo: null };
+let runId = 0; // mỗi lần Kiểm tra lại tăng 1; lần kiểm tra cũ còn chạy dở thì tự dừng
 
 function setStep(id, cls) {
   const el = $(id);
@@ -127,17 +54,18 @@ async function pickExcel(folder) {
   return { file: pick && pick.file, name: pick && pick.path, count: list.length };
 }
 
+// ---------------------------------------------------------------- Bước 3: kiểm tra
+
 async function check() {
-  if (state.exporting || !state.source) return;
+  if (isExporting() || !state.source) return;
   const my = ++runId;
-  state.result = null;
   lockLaterSteps();
   setStep("step3");
   showCheck('<div class="verdict busy">Đang đọc thư mục…</div>');
 
   let folder;
   try {
-    folder = await readFolder();
+    folder = await readFolder(state.source);
   } catch {
     if (my !== runId) return;
     showCheck('<div class="verdict bad">Không đọc được thư mục khóa. Hãy bấm Chọn thư mục khóa và chọn lại.</div>');
@@ -196,7 +124,15 @@ async function check() {
   }
   if (my !== runId) return;
   const result = readCourse(sheets, folder, durations, state.logo);
-  // Đọc thử đầu mỗi tài liệu: file OneDrive "chỉ trên mạng" chưa tải về, hoặc file đổi đuôi thành .pdf
+  await checkPdfFiles(result);
+  if (my !== runId) return;
+  const n = result.errors.length;
+  showBar(`📄 <b>${esc(name)}</b> · đọc lúc ${now()} · ${n ? `<span class="bad">${n} lỗi</span>` : '<span class="ok">không có lỗi</span>'}`);
+  render(result, folder);
+}
+
+// Đọc thử đầu mỗi tài liệu: file OneDrive "chỉ trên mạng" chưa tải về, hoặc file đổi đuôi thành .pdf
+async function checkPdfFiles(result) {
   for (const f of result.files.filter((f) => f.zipPath.startsWith("docs/"))) {
     let head = "";
     try {
@@ -207,10 +143,6 @@ async function check() {
     }
     if (head !== "%PDF-") result.errors.push(`Tài liệu '${f.path}' có đuôi .pdf nhưng không phải file PDF thật. Hãy mở file gốc và xuất lại sang PDF`);
   }
-  if (my !== runId) return;
-  const n = result.errors.length;
-  showBar(`📄 <b>${esc(name)}</b> · đọc lúc ${now()} · ${n ? `<span class="bad">${n} lỗi</span>` : '<span class="ok">không có lỗi</span>'}`);
-  render(result, folder);
 }
 
 function showFolderPopups(folder) {
@@ -266,7 +198,6 @@ function render({ course, errors, warnings, files, totalSize }, folder) {
   }
   showCheck(html);
   setStep("step3", errors.length ? null : "done");
-  state.result = errors.length ? null : { course, files, totalSize };
 
   // Bước 2 dùng được cả khi Excel còn lỗi (đang soạn câu hỏi); bước 4, 5 cần hết lỗi.
   // Excel chưa có video nào thì đặt pop-up theo thứ tự thư mục.
@@ -289,7 +220,8 @@ function render({ course, errors, warnings, files, totalSize }, folder) {
   if (!errors.length) {
     setStep("step4");
     renderPreviewStep($("preview"), course, urls);
-    openExport();
+    setStep("step5");
+    renderExportStep($("export"), { course, files, totalSize });
   }
 }
 
@@ -297,118 +229,13 @@ function lockLaterSteps() {
   setStep("step4", "locked");
   closePreview($("preview"));
   setStep("step5", "locked");
-  $("export").innerHTML = '<p class="note">Sửa hết lỗi ở bước 3 để xuất gói.</p>';
+  closeExport($("export"));
 }
 
-// ---------------------------------------------------------------- Bước 5: xuất gói
-
-function openExport() {
-  const { course, totalSize } = state.result;
-  setStep("step5");
-  const tooBig = !window.showSaveFilePicker && totalSize > MEMORY_LIMIT;
-  $("export").innerHTML = tooBig
-    ? `<div class="verdict bad">Khóa này ${mb(totalSize)}, trình duyệt bạn đang dùng chỉ xuất được khóa dưới 500 MB. Hãy mở trang này bằng Chrome hoặc Edge.</div>`
-    : `<button class="btn" id="exportBtn">Xuất gói SCORM</button>
-       <span class="status">Sẽ lưu thành file <b>SCORM_${esc(course.id)}.zip</b></span>
-       <div id="exportState"></div>`;
-  if (!tooBig) $("exportBtn").onclick = exportPackage;
-}
-
-async function playerFiles() {
-  const list = await (await fetch("./player-files.json")).json();
-  return Promise.all(list.map(async (path) => {
-    const r = await fetch("./player/" + path);
-    if (!r.ok) throw new Error("Không tải được file Player '" + path + "'. Hãy tải lại trang.");
-    return { path, data: new Uint8Array(await r.arrayBuffer()) };
-  }));
-}
-
-function progress(done, total) {
-  const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 100;
-  $("exportState").innerHTML = `<div class="bar"><span style="width:${pct}%"></span></div>
-    <p class="note">Đang ghi ${mb(done)} / ${mb(total)} (${pct}%). Đừng đóng trang này.</p>`;
-}
-
-async function exportPackage() {
-  const { course, files, totalSize } = state.result;
-  const name = `SCORM_${course.id}.zip`;
-  let writable = null, mem = null;
-  if (window.showSaveFilePicker) {
-    try {
-      const handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: "Gói SCORM", accept: { "application/zip": [".zip"] } }] });
-      writable = await handle.createWritable();
-    } catch (e) {
-      if (e.name === "AbortError") return; // người dùng bấm Hủy
-      $("exportState").innerHTML = `<div class="verdict bad">Không tạo được file: ${esc(e.message)}</div>`;
-      return;
-    }
-  } else {
-    mem = memorySink();
-  }
-
-  state.exporting = true;
-  document.body.classList.add("exporting");
-  $("exportBtn").disabled = true;
-  progress(0, totalSize);
-  try {
-    const size = await writePackage({
-      course, files,
-      playerFiles: await playerFiles(),
-      sink: writable ? diskSink(writable) : mem,
-      onProgress: progress,
-    });
-    if (writable) await writable.close();
-    else {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(mem.blob());
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-    }
-    showDone(course, name, size);
-  } catch (e) {
-    if (writable) await writable.abort().catch(() => {});
-    $("exportState").innerHTML = `<div class="verdict bad">Xuất gói không thành công: ${esc(e.message || e)}. Hãy thử lại.</div>`;
-  } finally {
-    state.exporting = false;
-    document.body.classList.remove("exporting");
-    $("exportBtn").disabled = false;
-  }
-}
-
-function showDone(course, name, size) {
-  const total = course.videos.reduce((s, v) => s + v.duration, 0);
-  const rows = [
-    ["Tên khóa (Course Title)", course.title],
-    ["Mã khóa (Course Number)", course.id],
-    ["Mô tả ngắn (Description)", course.description],
-    ["Tổng thời lượng, phút (Total Course Duration)", String(Math.max(1, Math.ceil(total / 60)))],
-  ];
-  $("exportState").innerHTML = `<div class="verdict ok">Đã lưu ${esc(name)} (${mb(size)}). Đưa file này lên Workday dưới dạng Packaged Content (SCORM).</div>
-    <h3>Thông tin để tạo khóa trên Workday</h3>
-    <table class="workday"><tbody>${rows.map(([k, v], i) => `<tr><th>${esc(k)}</th><td>${esc(v) || "<i>(trống)</i>"}</td>
-      <td><button class="copy" data-i="${i}">Copy</button></td></tr>`).join("")}</tbody></table>`;
-  $("exportState").querySelectorAll(".copy").forEach((b) => {
-    b.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(rows[b.dataset.i][1]);
-        b.textContent = "Đã copy";
-      } catch {
-        b.textContent = "Không copy được";
-      }
-      setTimeout(() => (b.textContent = "Copy"), 1500);
-    };
-  });
-}
-
-window.addEventListener("beforeunload", (e) => {
-  if (state.exporting) e.preventDefault();
-});
+// ---------------------------------------------------------------- Bước 1: chọn thư mục, Excel, logo
 
 function useFolder(source, name) {
-  if (state.exporting) return;
+  if (isExporting()) return;
   dropUrls();
   state.source = source;
   state.folderName = name;

@@ -3,7 +3,7 @@
 // Dùng được cả khi chưa có Excel: khi đó xếp video theo thứ tự thư mục và cho copy danh sách video.
 // Builder không sửa file Excel của người dùng.
 
-import { esc, mmss } from "./util.js";
+import { esc, mmss, copyText } from "./util.js";
 
 // Mốc đã đặt theo thư mục khóa: { path (đường dẫn video trong thư mục), time }.
 // Lưu theo file video chứ không theo số thứ tự, để sửa Excel (đổi thứ tự bài) không làm lệch mốc.
@@ -12,16 +12,6 @@ const placedBy = new Map();
 const chaptersBy = new Map();
 // Video đang xem và vị trí đang phát, để bấm Kiểm tra lại không bị nhảy về video 1, giây 0
 const lastPos = new Map();
-
-async function copyText(btn, text, label) {
-  try {
-    await navigator.clipboard.writeText(text);
-    btn.textContent = "Đã copy";
-  } catch {
-    btn.textContent = "Không copy được";
-  }
-  setTimeout(() => (btn.textContent = label), 1500);
-}
 
 /**
  * el:   phần tử chứa bước 2

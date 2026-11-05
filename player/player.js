@@ -606,7 +606,7 @@
     var score = N_Q ? Math.round(right / N_Q * 100) : 0;
     var passed = score >= SET.passScore;
     S.s = Math.max(S.s, score);
-    if (passed) { S.q = 1; S.s = Math.max(S.s, score); }
+    if (passed) S.q = 1;
     else if (S.a >= SET.maxAttempts) S.q = 2;
     pushStatus(); save(true);
     renderToc();

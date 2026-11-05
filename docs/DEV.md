@@ -1,6 +1,6 @@
 # Hướng dẫn cho người phát triển
 
-Tài liệu này dành cho người tiếp quản code (không cần dùng Claude Code). Đọc theo thứ tự: mục 1–4 để chạy được trên máy, mục 5–6 khi cần sửa, mục 7 trước khi đụng phần khó.
+Tài liệu này dành cho người tiếp quản code (không cần dùng Claude Code). Đọc theo thứ tự: mục 1–4 để chạy được trên máy, mục 5–6 khi cần sửa, mục 7 trước khi đụng phần khó. Làm tiếp bằng GitHub Copilot: mục 10.
 
 Bối cảnh dự án và các quyết định đã chốt: `docs/HANDOFF.md`. Spec của Builder: `docs/BUILDER_SPEC.md`.
 
@@ -44,6 +44,7 @@ Thư mục khóa (Excel + video + PDF)
    │
    ├─ builder/src/xlsx.js      đọc .xlsx → { tên sheet: rows[dòng][cột] } (dòng, cột tính từ 1 như Excel)
    ├─ builder/src/course.js    readCourse(): đọc 3 sheet (+ sheet Chương nếu có), tìm file, kiểm tra lỗi → { course, errors, warnings, files }
+   │                           mỗi sheet một hàm: readInfo, readVideos (+ readDocs), readQuestions, readChapters
    ├─ builder/src/package.js   writePackage(): course.js + imsmanifest.xml + player/ + video/PDF/logo
    └─ builder/src/zip.js       ghi zip từng đoạn xuống ổ cứng (khóa 1,5 GB không giữ trong RAM)
    │
@@ -55,16 +56,19 @@ SCORM_<Mã khóa>.zip ── Workday mở index.html ── player/player.js đ�
 Ba file `xlsx.js`, `course.js`, `package.js` dùng chung cho **cả** website (`builder/src/main.js`) **và** lệnh dòng lệnh (`builder/scripts/build-scorm.mjs`). Sửa một chỗ là cả hai cùng đổi.
 
 Các file khác trong `builder/src/`:
-- `main.js`: giao diện 5 bước (chọn thư mục → đặt pop-up → kiểm tra → xem thử → xuất)
+- `main.js`: điều phối 5 bước (chọn thư mục → đặt pop-up → kiểm tra → xem thử → xuất); phần kiểm tra (bước 3) nằm ở đây
+- `folder.js`: đọc thư mục khóa trên trình duyệt, đo thời lượng video, tạo link phát video (Blob URL)
 - `builder/huong-dan.html` (+ `src/guide.js`, `src/guide.css`): trang hướng dẫn cho trainer, mở từ nút "📖 Hướng dẫn" ở đầu Builder. Là trang thứ 2 của Vite (khai báo trong `vite.config.js`). **Đổi giao diện Builder, cột Excel, thông báo lỗi hoặc luật học thì sửa trang này cho khớp.** Trang đi từ đơn giản tới chi tiết: 4 bước lớn → bấm từng bước xem việc cần làm → "Tra cứu khi cần" (đóng sẵn). Khi in, mọi mục tự mở ra
 - `popups.js`: bước 2, phát video và bấm lấy mốc pop-up
 - `preview.js`: bước 4, chạy Player thật trong khung
-- `util.js`: hàm nhỏ dùng chung; `defaults.json`: nội dung mặc định (câu liên hệ khi hết lượt)
+- `export.js`: bước 5, xuất gói (ghi thẳng xuống ổ cứng hoặc tạo trong bộ nhớ) và bảng thông tin cho Workday
+- `util.js`: hàm nhỏ dùng chung (`esc`, `mmss`, `mb`, `copyText`…); `defaults.json`: nội dung mặc định (câu liên hệ khi hết lượt)
 - `builder/scripts/copy-assets.mjs`: chép `player/`, Excel mẫu, logo vào `builder/public/` (thư mục sinh ra, **không sửa tay**)
 
 Cấu trúc repo còn lại:
 
 ```
+AGENTS.md                  luật cho trợ lý AI (Copilot, Claude Code…); CLAUDE.md nạp lại file này
 docs/                      HANDOFF (bối cảnh, quyết định), BUILDER_SPEC, file này
 player/                    Player: index.html, player.js, player.css, scorm12.js, logo.png, fonts/, pdfjs/
 brand/                     logo Coteccons gốc (trắng cho nền tối, màu cho nền sáng)
@@ -76,6 +80,8 @@ tools/setup_assets.sh      tạo lại toàn bộ file trên
 tests/                     test Player, test giao diện Builder (Python + Playwright), LMS giả lập (lms.html)
 builder/tests/             test logic (Node), golden/ATLD-DEMO.json = gói mẫu của khóa demo
 .github/workflows/pages.yml  chạy toàn bộ test và đưa Builder lên GitHub Pages khi main thay đổi
+.github/copilot-instructions.md, workflows/copilot-setup-steps.yml, ISSUE_TEMPLATE/, pull_request_template.md
+                           dùng khi làm tiếp bằng GitHub Copilot (mục 10)
 ```
 
 ## 5. Quy trình sửa code
@@ -140,7 +146,7 @@ Với 3 file này: sửa ít nhất có thể, thêm test cho đúng trường h
 - **Xem thử trong Builder:** video dùng Blob URL (tua bình thường). `player/preview.html` do `copy-assets.mjs` tạo từ `player/index.html`, đọc dữ liệu khóa từ trang Builder.
 - **Test xuất khóa lớn** (`LARGE=1 bash tests/run_all.sh`) cần ~5 GB ổ trống và dùng hồ sơ trình duyệt lưu trên đĩa (hồ sơ mặc định của Playwright nằm trong RAM).
 - **Sự kiện của video cũ:** khi rời bài, video cũ vẫn bắn `pause`/`ratechange` sau khi biến `vid` đã đổi sang video mới (hoặc `null` khi vào bài thi). Trong `renderVideo` của `player.js`, gắn sự kiện video bằng hàm `on(...)` (chỉ chạy khi đúng video đang hiện), không dùng thẳng `vid.addEventListener`.
-- **Hai loại khóa (từ 05/11/2026):** dòng "Loại khóa" ở **dòng 12** sheet Thông tin khóa (để ở cuối cho khỏi dời các dòng cũ). `readCourse()` chỉ đọc dòng 2–12: thêm dòng mới ở sheet này thì phải nới vòng lặp. Để trống = Bắt buộc, để Excel mẫu cũ chạy như trước. Khóa Tham khảo → `settings.reference = true`: `course.js` **không đọc** sheet Câu hỏi (nên không báo lỗi ở đó, chỉ cảnh báo số câu bị bỏ qua) và xuất `popups: []`, `quiz: []`. Player cũng tự bỏ pop-up/bài thi khi `reference` bật, phòng gói sửa tay.
+- **Hai loại khóa (từ 05/11/2026):** dòng "Loại khóa" ở **dòng 12** sheet Thông tin khóa (để ở cuối cho khỏi dời các dòng cũ). `readInfo()` chỉ đọc dòng 2–12: thêm dòng mới ở sheet này thì tăng `INFO_LAST_ROW` trong `course.js`. Để trống = Bắt buộc, để Excel mẫu cũ chạy như trước. Khóa Tham khảo → `settings.reference = true`: `course.js` **không đọc** sheet Câu hỏi (nên không báo lỗi ở đó, chỉ cảnh báo số câu bị bỏ qua) và xuất `popups: []`, `quiz: []`. Player cũng tự bỏ pop-up/bài thi khi `reference` bật, phòng gói sửa tay.
 - **Khóa Tham khảo trong Player:** báo `completed` ngay khi mở (`pushStatus`); `cmi.core.exit` luôn là `suspend` (khác khóa Bắt buộc) để lần sau mở lại đúng bài, đúng chỗ. Ẩn % hoàn thành bằng class `ref` trên `<body>`.
 - **Chương (từ 05/11/2026):** sheet "Chương" **không bắt buộc** (thiếu sheet = khóa không có chương, không báo lỗi). Builder tự xếp theo thời gian; trùng mốc thì giữ dòng đầu và cảnh báo. Trong gói: `videos[i].chapters = [{ time, title }]`, chỉ có khi video có chương. Player: khóa Bắt buộc dùng **cùng mốc "đã xem tới"** (`maxW`) với luật chặn tua để làm mờ chương chưa xem; sửa luật tua thì sửa cả `chapterLocked()`.
 - **Test khóa Tham khảo:** `tests/test_player.py` chép gói demo sang `out/test/course-ref/`, bật `reference` trong `course.js` rồi mở `lms.html?course=course-ref`.
@@ -153,3 +159,34 @@ Với 3 file này: sửa ít nhất có thể, thêm test cho đúng trường h
 - Gói khóa demo vẫn khớp gói mẫu, hoặc gói mẫu đã được cập nhật có chủ đích.
 - Thử trên Chrome và Edge; Builder chạy được trên máy Windows và Mac.
 - Đổi luật học hoặc cách đóng gói thì thử thêm một gói trên SCORM Cloud.
+
+## 10. Làm tiếp bằng GitHub Copilot
+
+Người làm tiếp không cần biết lập trình sâu, chỉ cần tài khoản GitHub có **Copilot Pro** và quyền ghi vào repo `ctd-academy/scorm`. Repo đã có sẵn:
+
+| File | Để làm gì |
+|---|---|
+| `AGENTS.md` | Luật cho mọi trợ lý AI: bối cảnh, quyết định đã chốt, những việc không được làm, thế nào là "xong" |
+| `.github/copilot-instructions.md` | Copilot tự đọc trong mọi câu hỏi (bản tóm tắt của `AGENTS.md`) |
+| `.github/workflows/copilot-setup-steps.yml` | Cài sẵn Node, Chromium, ffmpeg để Copilot tự chạy test trên GitHub |
+| `.github/ISSUE_TEMPLATE/yeu-cau-sua.md` | Mẫu viết yêu cầu sửa, đủ thông tin để Copilot làm đúng |
+| `.github/pull_request_template.md` | Danh sách kiểm tra trước khi merge |
+
+**Cách 1 (khuyên dùng, không cần cài gì): giao việc cho Copilot ngay trên GitHub**
+1. Tab **Issues** → **New issue** → chọn mẫu "Yêu cầu sửa / thêm tính năng", điền bằng lời thường. Mỗi issue một việc nhỏ.
+2. Ở ô **Assignees**, chọn **Copilot**. Copilot tự tạo nhánh, sửa code, chạy test và mở Pull Request (mất vài chục phút).
+3. Mở Pull Request đó: đọc phần mô tả, xem tab **Files changed**. Muốn sửa thêm thì viết bình luận bắt đầu bằng `@copilot …`.
+4. Chờ dấu ✓ xanh (GitHub chạy toàn bộ test). Tải gói thử nếu cần, rồi **Merge**. Website tự cập nhật sau ~2 phút.
+5. Lỗi sau khi merge: mở Pull Request đó, bấm **Revert** (xem mục 5).
+
+**Cách 2: Copilot Chat trong VS Code (cho người đã cài máy theo mục 2)**
+- Mở thư mục repo trong VS Code, mở Copilot Chat, chọn chế độ **Agent**. Copilot tự đọc `.github/copilot-instructions.md` và `AGENTS.md`.
+- Câu mở đầu nên dùng: *"Đọc AGENTS.md và docs/DEV.md. Việc cần làm: … Nói kế hoạch trước khi sửa."*
+- Sửa xong: bảo Copilot chạy `bash tests/run_all.sh`, rồi tự thử trên Chrome/Edge, mở Pull Request như mục 5.
+
+**Lưu ý để an toàn**
+- Copilot hay "sửa cho đạt test" bằng cách đổi test: khi xem **Files changed**, để ý file trong `tests/` và `builder/tests/`. Thấy test bị xóa/nới lỏng thì không merge.
+- Việc đụng tới luật học (Player), cách đóng gói hoặc 3 file khó ở mục 7: nhờ Alex xem trước khi merge.
+- Việc lớn (thêm loại khóa, đổi cấu trúc Excel): chia nhỏ thành nhiều issue, làm từng cái.
+- Nên bật **Settings → Branches → Branch protection** cho `main`: bắt buộc qua Pull Request và test xanh mới merge được (người quản trị repo bật một lần).
+

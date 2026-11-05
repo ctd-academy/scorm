@@ -1,7 +1,7 @@
 # HANDOFF – Dự án Coteccons SCORM Builder
 
 > Cập nhật: 28/10/2026 · Chủ dự án: Alex (L&OD Team Lead, Coteccons)
-> Bản này đi kèm repo. Spec Builder web: `docs/BUILDER_SPEC.md`. Hướng dẫn cho người phát triển: `docs/DEV.md`. Hướng dẫn cho Claude Code: `CLAUDE.md`.
+> Bản này đi kèm repo. Spec Builder web: `docs/BUILDER_SPEC.md`. Hướng dẫn cho người phát triển: `docs/DEV.md`. Luật cho trợ lý AI (Copilot, Claude Code): `AGENTS.md`.
 
 **Ký hiệu trạng thái:** ✅ Đã chốt · 🟡 Đề xuất, chờ Alex chốt · ❓ Còn mở, cần hỏi Workday/IT
 
@@ -100,7 +100,7 @@
 | `cmi.suspend_data` | JSON gọn: `{v:[[đã xem xa nhất, vị trí, xong]], p:[id pop-up đã đúng], a:số lượt, s:điểm cao nhất, q:0/1/2}` (giới hạn 4.096 ký tự) |
 | `cmi.core.session_time`, `cmi.core.exit` | exit = "suspend" khi chưa xong, rỗng khi đạt/hết lượt. Khóa Tham khảo luôn "suspend" để lần sau mở lại đúng bài, đúng chỗ |
 
-**Đã kiểm tra:** 43/43 tình huống tự động (26 luật học + 17 tài liệu PDF) trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud**: ổn.
+**Đã kiểm tra:** 62/62 tình huống tự động (luật học, tài liệu PDF, chương, khóa Tham khảo) trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud**: ổn.
 
 **Phát hiện khi test:** tua lại video chỉ đúng khi máy chủ hỗ trợ tải từng phần (HTTP Range). Workday và SCORM Cloud thuộc loại này.
 
@@ -158,7 +158,7 @@ Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư m�
 
 ## 11. Bước tiếp theo
 
-1. Xây Builder web v1 theo `docs/BUILDER_SPEC.md` (Claude Code), deploy lên GitHub Pages
+1. ~~Xây Builder web v1 theo `docs/BUILDER_SPEC.md`, deploy lên GitHub Pages~~ ✅ · bàn giao để làm tiếp bằng GitHub Copilot: `docs/DEV.md` mục 10
 2. ~~Alex thử gói demo trên SCORM Cloud~~ ✅ · ~~logo + liên hệ L&OD~~ ✅
 3. Alex dùng khóa thật để pilot (khóa nằm trên máy Alex, đóng gói bằng Builder ngay trên máy)
 4. Hỏi Workday các câu ở mục 8

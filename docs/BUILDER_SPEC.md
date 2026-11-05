@@ -90,9 +90,10 @@ imsmanifest.xml
 window.COURSE = {
   id, title, description, logo: null | "assets/<file>",
   settings: { passScore, maxAttempts, questionsPerAttempt, timeLimitMinutes,
-              showAnswers, maxSpeed: 2, contact },
+              showAnswers, maxSpeed: 2, contact, reference /* true = khóa Tham khảo */ },
   videos: [{ title, src: "videos/<file>", duration /* giây, làm tròn */,
-             docs /* chỉ có khi video có tài liệu */: [{ title /* tên file bỏ .pdf */, src: "docs/<file>" }] }],
+             docs /* chỉ có khi video có tài liệu */: [{ title /* tên file bỏ .pdf */, src: "docs/<file>" }],
+             chapters /* chỉ có khi video có chương */: [{ time /* giây */, title }] }],
   popups: [{ video /* từ 0 */, time /* giây */, q, options: [...], answer /* từ 0 */, explain }],
   quiz:   [{ q, options: [...], answer, explain }]
 };
@@ -102,7 +103,7 @@ window.COURSE = {
 
 Quy tắc đọc Excel: xem `readCourse()` trong `builder/src/course.js`. Dòng ví dụ (cột STT bắt đầu bằng "(Ví dụ)" ở sheet Video, hoặc câu hỏi bắt đầu bằng "(Ví dụ)") bị bỏ qua.
 
-**Test tương đương (bắt buộc):** gói khóa demo phải khớp gói mẫu `builder/tests/golden/ATLD-DEMO.json` (cùng danh sách file, `course.js` cùng JSON, manifest hợp lệ); gói Builder web xuất ra phải giống gói của lệnh đóng gói; chạy `tests/test_player.py` trên gói phải đạt hết (43/43). Cả ba nằm trong `bash tests/run_all.sh`.
+**Test tương đương (bắt buộc):** gói khóa demo phải khớp gói mẫu `builder/tests/golden/ATLD-DEMO.json` (cùng danh sách file, `course.js` cùng JSON, manifest hợp lệ); gói Builder web xuất ra phải giống gói của lệnh đóng gói; chạy `tests/test_player.py` trên gói phải đạt hết (62/62). Cả ba nằm trong `bash tests/run_all.sh`.
 
 ## 5. Giao diện
 

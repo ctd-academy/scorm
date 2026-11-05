@@ -13,7 +13,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DEMO = join(ROOT, "demo-course");
 const XLSX = join(DEMO, "ATLD-DEMO.xlsx");
 
-// Mọi file trong thư mục khóa (kể cả thư mục con), giống folderEntries() trong src/main.js
+// Mọi file trong thư mục khóa (kể cả thư mục con), giống readFolder() trong src/folder.js
 function folderOf(dir, prefix = "") {
   return readdirSync(join(dir, prefix), { withFileTypes: true }).flatMap((d) => {
     const path = prefix + d.name;
