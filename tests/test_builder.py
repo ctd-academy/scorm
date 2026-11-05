@@ -130,6 +130,7 @@ with sync_playwright() as p:
           gp.locator("#tom-tat .big4 li").count() == 4 and gp.locator("details").count() == 10 and gp.locator("details[open]").count() == 0)
     gp.click("#s3 summary")             # mở bước 3
     gp.click("#s3 a[href='#r-loi']")    # bấm "Cách sửa lỗi hay gặp"
+    gp.wait_for_selector("#r-loi[open]", timeout=3000)
     check("Hướng dẫn: bấm link tra cứu thì mở đúng mục", gp.locator("#r-loi[open]").count() == 1)
     tpl = gp.evaluate("fetch(document.querySelector('#tom-tat a[download]').href).then(r => r.ok && r.headers.get('content-length') > 1000)")
     check("Hướng dẫn: link tải Excel mẫu chạy", tpl and not g404, g404)

@@ -12,6 +12,12 @@ function openTarget() {
 }
 window.addEventListener("hashchange", openTarget);
 openTarget();
+// Mở ngay khi bấm link (không chờ "hashchange", có thể đến trễ), kể cả khi bấm lại link cũ
+document.addEventListener("click", (e) => {
+  const a = e.target.closest('a[href^="#"]');
+  const el = a && document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+  if (el && el.tagName === "DETAILS") el.open = true;
+});
 
 const all = () => document.querySelectorAll("details");
 let wasOpen = [];
