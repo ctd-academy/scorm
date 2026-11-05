@@ -1,6 +1,6 @@
 # builder/
 
-Website Builder: trainer chọn thư mục khóa (video + Excel), Builder tự tìm Excel, cho đặt pop-up, kiểm tra lỗi và xuất gói SCORM. Spec: `docs/BUILDER_SPEC.md`.
+Website Builder: trainer chọn thư mục khóa (video + Excel), Builder tự tìm Excel, cho đặt pop-up, kiểm tra lỗi và xuất gói SCORM. Spec: `docs/BUILDER_SPEC.md`. Hướng dẫn cho trainer: `huong-dan.html` (trang thứ 2 của website).
 
 ```bash
 npm install

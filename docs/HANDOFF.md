@@ -120,7 +120,7 @@ Mỗi khóa = 1 file Excel chép từ **template chuẩn, trống** `templates/M
 
 Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư mục khóa → đặt pop-up → kiểm tra → xem thử → xuất), xử lý hoàn toàn trên trình duyệt. Cùng code đóng gói với lệnh `builder/scripts/build-scorm.mjs`.
 
-**Tiến độ:** M1 ✅ (chọn file, đọc Excel + thư mục video, màn hình kiểm tra lỗi) · M2 ✅ (xuất zip SCORM streaming, thông tin Workday; khóa 1,5 GB xuất trong ~30 giây, RAM tăng ~150 MB) · M3 ✅ (đặt pop-up bằng nút bấm, xem thử bằng Player thật; sau đó đổi luồng: chọn thư mục 1 lần, tự tìm Excel, nút Kiểm tra lại, đặt pop-up trước bước kiểm tra) · M4 hướng dẫn trainer. Deploy tự động lên GitHub Pages khi `main` thay đổi.
+**Tiến độ:** M1 ✅ (chọn file, đọc Excel + thư mục video, màn hình kiểm tra lỗi) · M2 ✅ (xuất zip SCORM streaming, thông tin Workday; khóa 1,5 GB xuất trong ~30 giây, RAM tăng ~150 MB) · M3 ✅ (đặt pop-up bằng nút bấm, xem thử bằng Player thật; sau đó đổi luồng: chọn thư mục 1 lần, tự tìm Excel, nút Kiểm tra lại, đặt pop-up trước bước kiểm tra) · M4 🟡 hướng dẫn trainer: trang `huong-dan.html` trong Builder (nút "📖 Hướng dẫn"), chờ trainer đọc thử. Deploy tự động lên GitHub Pages khi `main` thay đổi.
 
 ## 8. Việc còn mở cần hỏi Workday / IT ❓
 
