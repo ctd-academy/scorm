@@ -71,6 +71,8 @@
 | 17 | IT chưa thấy chặn gì (27/10) | ✅ |
 | 18 | Logo mặc định trong Player: **logo Coteccons bản trắng** (`player/logo.png`); liên hệ khi hết lượt: **Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn** (sửa ở `builder/src/defaults.json`) | ✅ |
 | 19 | **Một động cơ đóng gói** dùng chung cho website và dòng lệnh (`builder/scripts/build-scorm.mjs`); bỏ bản Python `build_scorm.py`. GitHub tự chạy toàn bộ test (logic, Player, giao diện) mỗi lần đổi code (28/10) | ✅ |
+| 20 | **Hai loại khóa** (05/11/2026), chọn ở dòng "Loại khóa" sheet Thông tin khóa. **Bắt buộc** (mặc định, để trống cũng vậy): luật #4–#9 như trên. **Tham khảo** (tài liệu hướng dẫn): mở bài nào cũng được, tua tự do, chuyển tab không dừng, không pop-up, không bài thi, **mở khóa là báo `completed`**. Vẫn tối đa 2x, tài liệu PDF vẫn không tải/in | ✅ |
+| 21 | **Chương** theo từng video (05/11/2026, sheet "Chương", không bắt buộc): danh sách dưới video, bấm để nhảy tới đoạn đó. Khóa Bắt buộc chỉ bấm được chương đã xem tới. Nhập giống pop-up: đặt mốc + gõ tên trên Builder bước 2, copy dán vào Excel. **Không làm** vạch chương trên thanh tua (phải tự vẽ lại bộ điều khiển video) và thanh chương riêng: để sau nếu cần | ✅ |
 
 ## 5. Đã xây xong: Player v1
 
@@ -78,8 +80,10 @@
 
 **Tính năng đã có:**
 - Mục lục tuần tự có khóa; thanh % hoàn thành; mục lục thu gọn trên điện thoại
+- **Khóa Tham khảo** (quyết định #20): không khóa bài, không chặn tua, không % hoàn thành, mở là `completed`
+- **Chương** (quyết định #21): danh sách dưới video, tô chương đang phát; mục lục ghi số chương mỗi bài
 - Video: chỉ tua lại trong phần đã xem; giới hạn 2x (0.75–2x); tự dừng khi chuyển tab/khóa màn hình; học tiếp đúng giây đã dừng; tự thoát toàn màn hình khi hiện pop-up
-- Pop-up theo mốc giây; sai → quay về đầu đoạn và hỏi lại khi tới mốc
+- Pop-up theo mốc giây; sai → chọn lại tới khi đúng (quyết định #7)
 - Bài thi chỉ mở khi xem hết video; rút ngẫu nhiên câu, xáo đáp án; đồng hồ đếm ngược và tự nộp khi hết giờ; hiện đáp án + giải thích nếu bật
 - **Lượt thi được tính ngay khi bấm "Bắt đầu"** (chặn mở đề rồi thoát); học viên được báo trước
 - Khóa không có câu hỏi cuối khóa → hoàn thành khi xem hết video
@@ -90,11 +94,11 @@
 
 | Trường | Giá trị |
 |---|---|
-| `cmi.core.lesson_status` | incomplete khi đang học hoặc rớt nhưng còn lượt · passed · failed (hết lượt) · completed (khóa không thi) |
+| `cmi.core.lesson_status` | incomplete khi đang học hoặc rớt nhưng còn lượt · passed · failed (hết lượt) · completed (khóa không thi; khóa Tham khảo: ngay khi mở) |
 | `cmi.core.score.raw` (min 0, max 100) | điểm cao nhất |
 | `cmi.core.lesson_location` | số thứ tự video hoặc "quiz" |
 | `cmi.suspend_data` | JSON gọn: `{v:[[đã xem xa nhất, vị trí, xong]], p:[id pop-up đã đúng], a:số lượt, s:điểm cao nhất, q:0/1/2}` (giới hạn 4.096 ký tự) |
-| `cmi.core.session_time`, `cmi.core.exit` | exit = "suspend" khi chưa xong, rỗng khi đạt/hết lượt |
+| `cmi.core.session_time`, `cmi.core.exit` | exit = "suspend" khi chưa xong, rỗng khi đạt/hết lượt. Khóa Tham khảo luôn "suspend" để lần sau mở lại đúng bài, đúng chỗ |
 
 **Đã kiểm tra:** 43/43 tình huống tự động (26 luật học + 17 tài liệu PDF) trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud**: ổn.
 
@@ -106,10 +110,11 @@ Mỗi khóa = 1 file Excel chép từ **template chuẩn, trống** `templates/M
 
 | Sheet | Nội dung |
 |---|---|
-| Hướng dẫn | Cách dùng, luật chơi cố định, quy ước nhập câu hỏi |
-| Thông tin khóa | Mã khóa, Tên khóa, Mô tả ngắn, Điểm đạt (%), Số lượt làm bài, Số câu mỗi lần thi (0 = tất cả), Thời gian làm bài (phút, 0 = không giới hạn), Hiện đáp án (Có/Không), Nội dung liên hệ khi hết lượt, File logo. Có ô tự đếm và cảnh báo |
+| Hướng dẫn | Cách dùng, hai loại khóa, luật khóa Bắt buộc, quy ước nhập câu hỏi |
+| Thông tin khóa | Mã khóa, Tên khóa, Mô tả ngắn, Điểm đạt (%), Số lượt làm bài, Số câu mỗi lần thi (0 = tất cả), Thời gian làm bài (phút, 0 = không giới hạn), Hiện đáp án (Có/Không), Nội dung liên hệ khi hết lượt, File logo, Loại khóa (Bắt buộc / Tham khảo, dòng 12). Có ô tự đếm và cảnh báo |
 | Video | STT · Tên bài · Tên file video · Tài liệu PDF (tùy chọn, nhiều file cách nhau `;`) |
-| Câu hỏi | Loại (POPUP / CUOI KHOA) · Video số · Mốc thời gian (mm:ss, Text) · Câu hỏi · A · B · C · D · Đáp án đúng · Giải thích |
+| Câu hỏi | Loại (POPUP / CUOI KHOA) · Video số · Mốc thời gian (mm:ss, Text) · Câu hỏi · A · B · C · D · Đáp án đúng · Giải thích. Khóa Tham khảo bỏ qua sheet này |
+| Chương | Video số · Mốc thời gian (mm:ss, Text) · Tên chương. Không bắt buộc; Excel mẫu cũ không có sheet này vẫn đọc được |
 
 ## 7. Builder web v1
 

@@ -1,4 +1,4 @@
-"""Test tự động cho Player v1 (Playwright + Chromium): luật học, bài thi, điện thoại, tài liệu PDF.
+"""Test tự động cho Player v1 (Playwright + Chromium): luật học, bài thi, điện thoại, tài liệu PDF, chương, khóa Tham khảo.
 
 Cách nhanh nhất: bash tests/run_all.sh (tự làm các bước dưới và chạy mọi test).
 
@@ -11,7 +11,7 @@ Chuẩn bị (từ gốc repo):
 
 Biến môi trường: CHROME_PATH (tùy chọn) nếu muốn dùng Chrome cài sẵn thay vì Chromium của Playwright.
 """
-import json, os, time
+import json, os, shutil, time
 from playwright.sync_api import sync_playwright
 
 URL = "http://localhost:8765/lms.html"
@@ -64,6 +64,14 @@ with sync_playwright() as p:
     check("Trạng thái ban đầu = incomplete", store()["cmi.core.lesson_status"] == "incomplete")
     check("Bài 2 đang khóa", f.evaluate("document.querySelectorAll('#tocList li')[1].classList.contains('locked')"))
     f.wait_for_function("document.getElementById('vid').readyState >= 1", timeout=10000)
+    check("Chương: video 1 có danh sách 3 chương, mục lục ghi số chương",
+          f.evaluate("document.querySelectorAll('#chapList button').length") == 3 and "3 chương" in f.inner_text("#tocList li:first-child .meta"),
+          f.inner_text("#tocList li:first-child .meta"))
+    f.evaluate("document.querySelectorAll('#chapList button')[2].click()")
+    time.sleep(0.3)
+    check("Chương (khóa Bắt buộc): chương chưa xem tới bị mờ, bấm vào không tua tới",
+          f.evaluate("document.querySelectorAll('#chapList button')[2].classList.contains('locked')") and f.evaluate("document.getElementById('vid').currentTime") < 2
+          and "chỉ có thể tua lại" in f.inner_text("#toast"), f.inner_text("#toast"))
     f.evaluate("() => { const v = document.getElementById('vid'); v.muted = true; v.currentTime = 30; }")
     time.sleep(0.8)
     check("Chặn tua tới (tua tới 0:30 bị kéo về)", f.evaluate("document.getElementById('vid').currentTime") < 2,
@@ -115,6 +123,12 @@ with sync_playwright() as p:
           f.evaluate("document.getElementById('vid').currentTime"))
     f.wait_for_function("!document.getElementById('nextBtn').disabled", timeout=30000)
     check("Xem hết video 1 -> bài 2 mở khóa", not f.evaluate("document.querySelectorAll('#tocList li')[1].classList.contains('locked')"))
+    f.evaluate("document.querySelectorAll('#chapList button')[1].click()")
+    f.wait_for_function("document.querySelectorAll('#chapList button')[1].classList.contains('now')", timeout=5000)
+    t = f.evaluate("document.getElementById('vid').currentTime")
+    check("Chương: đã xem tới thì bấm được, nhảy tới 0:20 và tô chương đang phát", 19.9 <= t <= 22 and
+          f.evaluate("document.querySelectorAll('#chapList button.locked').length") == 0, round(t, 2))
+    f.evaluate("document.getElementById('vid').pause()")
     sd = json.loads(store()["cmi.suspend_data"])
     check("Tiến độ được lưu vào suspend_data", sd["v"][0][2] == 1 and sorted(sd["p"]) == [0, 1], sd)
     check("Bài kiểm tra vẫn khóa khi chưa xem hết", f.evaluate("document.querySelector('#tocList li.quiz').classList.contains('locked')"))
@@ -231,6 +245,62 @@ with sync_playwright() as p:
     check("Mobile: tài liệu nằm dưới video", db["y"] >= vb["y"] + vb["height"], (vb, db))
     check("Mobile: mở tài liệu không tràn ngang", mp.evaluate("document.documentElement.scrollWidth <= window.innerWidth"))
     mp.screenshot(path=SHOTS + "shot_doc_mobile.png")
+
+    # ---- F. Khóa Tham khảo: cùng gói demo, chỉ đổi settings.reference (pop-up, bài thi vẫn có trong course.js: Player phải bỏ qua)
+    ref_dir = os.path.join(SHOTS, "course-ref")
+    shutil.rmtree(ref_dir, ignore_errors=True)
+    shutil.copytree(os.path.join(SHOTS, "course"), ref_dir)
+    with open(os.path.join(ref_dir, "course.js"), encoding="utf-8") as fh:
+        js = fh.read()
+    course = json.loads(js[js.index("=") + 1:].strip().rstrip(";"))
+    course["settings"]["reference"] = True
+    with open(os.path.join(ref_dir, "course.js"), "w", encoding="utf-8") as fh:
+        fh.write("window.COURSE = " + json.dumps(course, ensure_ascii=False) + ";\n")
+    rctx = b.new_context(viewport={"width": 1300, "height": 920})
+    rp = rctx.new_page()
+    rp.on("pageerror", lambda e: errors.append(str(e)))
+    rp.goto(URL + "?course=course-ref"); time.sleep(1.5)
+    rf = rp.frames[1]
+    rstore = lambda: rp.evaluate("lmsStore()")
+    check("Tham khảo: mở khóa là completed", rstore()["cmi.core.lesson_status"] == "completed", rstore()["cmi.core.lesson_status"])
+    check("Tham khảo: mọi bài đều mở, không có bài kiểm tra",
+          rf.evaluate("document.querySelectorAll('#tocList li').length") == 3 and rf.evaluate("document.querySelectorAll('#tocList li.locked, #tocList li.quiz').length") == 0)
+    check("Tham khảo: không hiện % hoàn thành", not rf.is_visible(".hdr .pct"))
+    check("Tham khảo: nút Bài tiếp theo bấm được ngay", not rf.evaluate("document.getElementById('nextBtn').disabled"))
+    rf.wait_for_function("document.getElementById('vid').readyState >= 1", timeout=10000)
+    rf.evaluate("() => { const v = document.getElementById('vid'); v.muted = true; v.currentTime = 30; }")
+    time.sleep(0.8)
+    t = rf.evaluate("document.getElementById('vid').currentTime")
+    check("Tham khảo: tua tới tự do (0:30)", 29.5 <= t <= 31, round(t, 2))
+    rf.evaluate("document.querySelectorAll('#chapList button')[2].click()")
+    time.sleep(0.5)
+    t = rf.evaluate("document.getElementById('vid').currentTime")
+    check("Tham khảo: bấm chương bất kỳ là nhảy tới (0:42)", 41.9 <= t <= 44 and rf.evaluate("document.querySelectorAll('#chapList button.locked').length") == 0, round(t, 2))
+    rf.evaluate("document.getElementById('vid').playbackRate = 4")
+    time.sleep(0.3)
+    check("Tham khảo: vẫn tối đa 2x", rf.evaluate("document.getElementById('vid').playbackRate") == 2)
+    rf.evaluate("() => { const v = document.getElementById('vid'); v.currentTime = 12; v.play(); }")
+    time.sleep(2.5)
+    rf.evaluate("""() => { Object.defineProperty(document, 'hidden', {configurable: true, get: () => true});
+                          document.dispatchEvent(new Event('visibilitychange')); }""")
+    time.sleep(0.3)
+    check("Tham khảo: chuyển tab không dừng video", not rf.evaluate("document.getElementById('vid').paused"))
+    check("Tham khảo: qua mốc pop-up 0:15 không hiện câu hỏi",
+          rf.evaluate("document.getElementById('vid').currentTime") > 16 and not rf.evaluate("document.getElementById('pop').classList.contains('show')"),
+          rf.evaluate("document.getElementById('vid').currentTime"))
+    rf.evaluate("() => { Object.defineProperty(document, 'hidden', {configurable: true, get: () => false}); document.getElementById('vid').pause(); }")
+    rf.click("#tocList li:nth-child(3) button")
+    time.sleep(0.5)
+    check("Tham khảo: nhảy thẳng tới bài 3, bài cuối không có nút Hoàn thành",
+          "Nhận diện mối nguy" in rf.inner_text(".main h2") and rf.evaluate("!document.getElementById('nextBtn')"))
+    rp.screenshot(path=SHOTS + "shot_reference.png")
+    rp.reload(); time.sleep(1.5); rf = rp.frames[1]
+    check("Tham khảo: tải lại vẫn mở đúng bài đang xem (bài 3)", "Nhận diện mối nguy" in rf.inner_text(".main h2"))
+    rp.evaluate("document.getElementById('f').contentWindow.dispatchEvent(new Event('pagehide'))"); time.sleep(0.3)
+    st = rstore()
+    check("Tham khảo: kết thúc phiên vẫn completed, exit = suspend (lần sau mở lại đúng chỗ)",
+          st["cmi.core.lesson_status"] == "completed" and st.get("cmi.core.exit") == "suspend", (st["cmi.core.lesson_status"], st.get("cmi.core.exit")))
+    rctx.close()
 
     check("Không có lỗi JavaScript", not errors, errors[:3])
     b.close()

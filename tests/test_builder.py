@@ -138,6 +138,9 @@ with sync_playwright() as p:
     check("Tóm tắt: luật thi", "Đạt từ 80% · 3 lượt · 5 câu mỗi lần (rút từ 6) · 10 phút" in s, s)
     docs_col = page.locator("#check table tbody tr td:nth-child(6)").all_inner_texts()
     check("Bảng kiểm tra: cột Tài liệu theo từng video", docs_col == ["slide-bai-1.pdf", "–", "slide-bai-3.pdf\nchecklist-moi-nguy.pdf"], docs_col)
+    check("Tóm tắt: loại khóa Bắt buộc, 5 chương", "Loại khóa\nBắt buộc" in s and "Số chương\n5" in s, s)
+    ch_col = page.locator("#check table tbody tr td:nth-child(7)").all_inner_texts()
+    check("Bảng kiểm tra: cột Chương theo từng video", ch_col == ["00:00 Mở đầu\n00:20 An toàn là trên hết\n00:42 Trách nhiệm của mỗi người", "–", "00:00 Mối nguy là gì\n00:30 Khi phát hiện mối nguy"], ch_col)
     check("Cảnh báo pop-up cách nhau < 1 phút", "chỉ cách pop-up 00:15" in page.inner_text("#check"))
     check("Bước 3 (kiểm tra) đánh dấu xong", "done" in page.get_attribute("#step3", "class"))
     page.screenshot(path=SHOTS + "1_demo_ok.png", full_page=True)
@@ -182,9 +185,29 @@ with sync_playwright() as p:
     page.click("#pvCopy")
     clip = page.evaluate("navigator.clipboard.readText()")
     check("Copy bảng: dán được vào 3 cột Loại, Video số, Mốc thời gian", clip == "POPUP\t1\t00:15\r\nPOPUP\t2\t00:33", repr(clip))
+    # ---- Bước 2: đặt chương (gõ tên, bấm nút; đủ 3 cột để dán vào sheet Chương)
+    check("Bước 2: hiện chương đã có trong Excel", "Chương đã có trong Excel: 00:00, 00:20, 00:42." in page.inner_text("#pvExisting"), page.inner_text("#pvExisting"))
+    def place_chapter(video_no, sec, name, enter=False):
+        page.select_option("#pvSelect", str(video_no - 1))
+        page.wait_for_function("document.getElementById('pvVideo').readyState >= 1")
+        page.evaluate(f"""() => new Promise((ok) => {{ const v = document.getElementById('pvVideo');
+            v.addEventListener('seeked', ok, {{ once: true }}); v.currentTime = {sec}; }})""")
+        page.fill("#chName", name)
+        if enter: page.press("#chName", "Enter")
+        else: page.click("#chAdd")
+    place_chapter(2, 25.4, "Đội mũ đúng cách")
+    place_chapter(2, 0.2, "Giới thiệu PPE", enter=True)
+    place_chapter(1, 15.3, "")  # để cuối ở video 1, giây 15 (test chọn lại thư mục bên dưới)
+    check("Đặt chương: bảng xếp theo video, theo thời gian; ô tên trống được", page.locator("#chList tbody tr").count() == 3 and
+          page.input_value("#chList tbody tr:nth-child(2) .ch-title") == "Giới thiệu PPE")
+    page.fill("#chList tbody tr:nth-child(1) .ch-title", "Nội dung chính")  # sửa tên ngay trong bảng
+    page.click("#chCopy")
+    clip = page.evaluate("navigator.clipboard.readText()")
+    check("Copy bảng chương: dán được vào 3 cột Video số, Mốc thời gian, Tên chương",
+          clip == "1\t00:15\tNội dung chính\r\n2\t00:00\tGiới thiệu PPE\r\n2\t00:25\tĐội mũ đúng cách", repr(clip))
     page.set_input_files("#folder", DEMO)  # chọn lại thư mục sau khi sửa Excel
     page.wait_for_selector("#pvList table.placed", timeout=30000)
-    check("Chọn lại thư mục: vẫn giữ các mốc đã đặt", page.locator("table.placed tbody tr").count() == 2)
+    check("Chọn lại thư mục: vẫn giữ các mốc đã đặt", page.locator("#pvList table.placed tbody tr").count() == 2 and page.locator("#chList tbody tr").count() == 3)
     check("Chọn lại thư mục: vẫn ở video đang xem (video 1, giây 15)", page.input_value("#pvSelect") == "0" and page.inner_text("#pvClock") == "00:15", (page.input_value("#pvSelect"), page.inner_text("#pvClock")))
     page.screenshot(path=SHOTS + "5_dat_popup.png", full_page=True)
 
@@ -199,6 +222,7 @@ with sync_playwright() as p:
     fr.wait_for_function("document.getElementById('vid') && document.getElementById('vid').readyState >= 1", timeout=15000)
     check("Xem thử: video phát từ máy người dùng (Blob URL)", fr.evaluate("document.getElementById('vid').src").startswith("blob:"))
     check("Xem thử: bài 2 và bài kiểm tra đang khóa", fr.evaluate("[1, 3].every(i => document.querySelectorAll('#tocList li')[i].classList.contains('locked'))"))
+    check("Xem thử: có danh sách chương", fr.evaluate("document.querySelectorAll('#chapList button').length") == 3)
     fr.evaluate("() => { const v = document.getElementById('vid'); v.muted = true; v.currentTime = 30; }")
     time.sleep(0.8)
     check("Xem thử: chặn tua tới", fr.evaluate("document.getElementById('vid').currentTime") < 2, fr.evaluate("document.getElementById('vid').currentTime"))
@@ -297,6 +321,29 @@ with sync_playwright() as p:
     page5.screenshot(path=SHOTS + "8_kiem_tra_lai.png", full_page=True)
     page5.close()
     check("Không có lỗi JavaScript (Kiểm tra lại)", not errors, errors)
+
+    # ---- Khóa Tham khảo: đổi "Loại khóa" trong Excel demo
+    ref = os.path.join(tmp, "Tham khao")
+    shutil.copytree(DEMO, ref)
+    wb = load_workbook(os.path.join(ref, "ATLD-DEMO.xlsx"))
+    wb["Thông tin khóa"]["B12"] = "Tham khảo"
+    wb.save(os.path.join(ref, "ATLD-DEMO.xlsx"))
+    page6 = b.new_page(viewport={"width": 1366, "height": 768})
+    page6.on("pageerror", lambda e: errors.append(str(e)))
+    load_demo(page6, folder=ref)
+    s6 = page6.inner_text(".summary")
+    check("Tham khảo: không có lỗi, tóm tắt ghi loại khóa và luật học", page6.locator(".verdict.ok").count() == 1 and "Loại khóa\nTham khảo" in s6
+          and "Khóa Tham khảo: mở bài nào cũng được" in s6 and "Câu pop-up\n0" in s6, s6)
+    check("Tham khảo: báo câu hỏi trong Excel sẽ bị bỏ qua", "10 câu hỏi trong sheet Câu hỏi sẽ bị bỏ qua" in page6.inner_text(".list.warnings"))
+    check("Tham khảo: bước 2 chỉ đặt chương, không có nút đặt pop-up", page6.locator("#pvAdd").count() == 0 and page6.locator("#chAdd").count() == 1)
+    page6.screenshot(path=SHOTS + "9_tham_khao.png", full_page=True)
+    page6.click("#pvOpen")
+    page6.wait_for_selector("#pvFrame")
+    page6.frame_locator("#pvFrame").locator("#tocList li").first.wait_for()
+    fr6 = next(x for x in page6.frames if x.url.endswith("/player/preview.html"))
+    check("Tham khảo: xem thử mọi bài đều mở, không có bài kiểm tra",
+          fr6.evaluate("document.querySelectorAll('#tocList li').length") == 3 and fr6.evaluate("document.querySelectorAll('#tocList li.locked').length") == 0)
+    page6.close()
 
     # ---- Trình duyệt không có showSaveFilePicker (Firefox/Safari): tải về từ bộ nhớ
     page2 = b.new_page(viewport={"width": 1366, "height": 768})

@@ -92,6 +92,8 @@ body.exporting #step1 .btn, body.exporting #step1 .linkbtn, body.exporting #rech
 .placer video { width: 100%; background: #000; border-radius: 8px; display: block; max-height: 340px; }
 .placer-bar { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
 .placer-bar .btn { min-width: 0; }
+.ch-name { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.ch-title { width: 100%; min-width: 120px; font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; }
 .clock { font-size: 28px; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; min-width: 90px; }
 table.placed td, table.placed th { padding: 4px 8px; }
 .del { border: 0; background: none; color: var(--bad); font-size: 14px; }

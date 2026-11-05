@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Chạy toàn bộ test, theo đúng thứ tự trên GitHub (.github/workflows/pages.yml):
 #   1. test logic Builder (npm test)
-#   2. đóng gói khóa demo bằng lệnh Node, chạy 43 test Player trên gói đó
+#   2. đóng gói khóa demo bằng lệnh Node, chạy test Player trên gói đó (cả bản khóa Tham khảo)
 #   3. dựng website Builder, chạy test giao diện Builder
 # Cần: Node 20+, python3 + thư viện trong tests/requirements.txt, ffmpeg/ffprobe.
 # Chạy từ thư mục gốc repo:  bash tests/run_all.sh        (thêm LARGE=1 để thử khóa 1,5 GB)

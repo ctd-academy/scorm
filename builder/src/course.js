@@ -6,6 +6,9 @@ import { VIDEO_EXT, VIDEO_EXTS, mmss } from "./util.js";
 
 const LETTERS = "ABCD";
 const SHEETS = { info: "Thông tin khóa", video: "Video", question: "Câu hỏi" };
+const CHAPTER_SHEET = "Chương"; // không bắt buộc: Excel mẫu cũ không có sheet này
+// "Loại khóa" ở sheet Thông tin khóa. Để trống = Bắt buộc (Excel mẫu cũ không có dòng này)
+const KINDS = { "bắt buộc": false, "bat buoc": false, "tham khảo": true, "tham khao": true };
 export const DEFAULT_CONTACT = defaults.contact; // sửa trong defaults.json
 export const SIZE_WARN = 3.5 * 1024 ** 3; // Workday giới hạn 4 GB mỗi gói
 const SIZE_LIMIT = 4 * 1024 ** 3 - 64 * 1024 ** 2; // chừa chỗ cho Player + header zip
@@ -86,11 +89,12 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
       "Hãy tải file Excel mẫu ở bước 1 và chép nội dung sang, giữ nguyên tên sheet.");
     return { course: null, errors, warnings, files: [] };
   }
+  const chapterSheet = byName.get(norm(CHAPTER_SHEET)) || null;
   sheets = got;
 
-  // ---- Thông tin khóa (dòng 2–11: cột A là mục, cột B là giá trị)
+  // ---- Thông tin khóa (dòng 2–12: cột A là mục, cột B là giá trị; dòng 12 "Loại khóa" thêm từ 11/2026)
   const info = {}, infoRow = {};
-  for (let r = 2; r <= 11; r++) {
+  for (let r = 2; r <= 12; r++) {
     const row = sheets[SHEETS.info][r] || [];
     if (cell(row[1])) { info[cell(row[1])] = row[2]; infoRow[cell(row[1])] = r; }
   }
@@ -121,7 +125,15 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
     showAnswers: ["có", "co", "yes", "x"].includes(cell(info["Hiện đáp án sau khi nộp"]).toLowerCase()),
     maxSpeed: 2,
     contact: cell(info["Nội dung liên hệ khi hết lượt"]) || DEFAULT_CONTACT,
+    reference: false,
   };
+  // Khóa Tham khảo: không học tuần tự, tua tự do, không pop-up, không bài thi, mở là hoàn thành
+  const kindRaw = cell(info["Loại khóa"]);
+  if (kindRaw) {
+    const k = kindRaw.toLowerCase().normalize("NFC");
+    if (k in KINDS) settings.reference = KINDS[k];
+    else errors.push(at(SHEETS.info, infoRow["Loại khóa"], `'Loại khóa' phải là 'Bắt buộc' hoặc 'Tham khảo', đang là '${kindRaw}'`));
+  }
 
   const files = [];
   // Tìm file theo tên ghi trong Excel: đúng đường dẫn, hoặc chỉ tên file ở bất kỳ thư mục con nào.
@@ -232,9 +244,14 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
   // ---- Câu hỏi (bỏ qua dòng có câu hỏi bắt đầu bằng "(Ví dụ)")
   const popups = [], quiz = [], popupRows = [];
   const qrows = sheets[SHEETS.question];
-  for (let r = 2; r < qrows.length; r++) {
+  const isQuestion = (row) => row && cell(row[4]) && !cell(row[4]).startsWith("(Ví dụ)");
+  // Khóa Tham khảo không có pop-up và bài thi: bỏ qua sheet Câu hỏi (không kiểm tra lỗi ở đó)
+  const ignoredQ = settings.reference ? qrows.slice(2).filter(isQuestion).length : 0;
+  if (ignoredQ)
+    warnings.push(`Khóa Tham khảo không có pop-up và bài kiểm tra: ${ignoredQ} câu hỏi trong sheet ${SHEETS.question} sẽ bị bỏ qua`);
+  for (let r = 2; r < qrows.length && !settings.reference; r++) {
     const row = qrows[r];
-    if (!row || !cell(row[4]) || cell(row[4]).startsWith("(Ví dụ)")) continue;
+    if (!isQuestion(row)) continue;
     const kind = cell(row[1]).toUpperCase();
     const opts = [5, 6, 7, 8].map((c) => cell(row[c]));
     while (opts.length && !opts[opts.length - 1]) opts.pop();
@@ -284,6 +301,53 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
       warnings.push(at(SHEETS.question, b.r, `pop-up ${mmss(b.p.time)} chỉ cách pop-up ${mmss(a.p.time)} (dòng ${a.r}) ${b.p.time - a.p.time} giây. Nên cách nhau ít nhất 1 phút`));
   }
 
+  // ---- Chương (sheet không bắt buộc): Video số · Mốc thời gian · Tên chương
+  const chapters = videos.map(() => []);
+  const chapterRows = videos.map(() => []);
+  const crows = chapterSheet || [];
+  for (let r = 2; r < crows.length; r++) {
+    const row = crows[r];
+    if (!row) continue;
+    const [vRaw, tRaw, title] = [cell(row[1]), cell(row[2]), cell(row[3])];
+    if (!vRaw && !tRaw && !title) continue;
+    if (title.startsWith("(Ví dụ)")) continue;
+    const vno = Math.trunc(Number(vRaw));
+    const t = parseTime(row[2]);
+    if (!(vno >= 1 && vno <= videos.length && String(vno) === vRaw)) {
+      errors.push(at(CHAPTER_SHEET, r, `'Video số' phải từ 1 đến ${videos.length}, đang là '${vRaw}'`));
+      continue;
+    }
+    if (t === null) {
+      errors.push(at(CHAPTER_SHEET, r, `mốc thời gian '${tRaw}' phải có dạng phút:giây, ví dụ 03:20`));
+      continue;
+    }
+    if (!title) {
+      errors.push(at(CHAPTER_SHEET, r, "chưa điền tên chương"));
+      continue;
+    }
+    const d = duration(videos[vno - 1]);
+    if (d && t >= d) {
+      errors.push(at(CHAPTER_SHEET, r, `mốc ${mmss(t)} vượt quá thời lượng video ${vno} (${mmss(d)})`));
+      continue;
+    }
+    const list = chapters[vno - 1], rowsOf = chapterRows[vno - 1];
+    const same = list.findIndex((c) => c.time === t);
+    if (same >= 0) {
+      warnings.push(at(CHAPTER_SHEET, r, `chương '${title}' trùng mốc ${mmss(t)} với chương ở dòng ${rowsOf[same]} (video ${vno}). Chỉ giữ chương ở dòng ${rowsOf[same]}`));
+      continue;
+    }
+    list.push({ time: t, title });
+    rowsOf.push(r);
+  }
+  chapters.forEach((list, i) => {
+    // Trainer nhập lộn thứ tự cũng được: xếp theo thời gian
+    const order = list.map((c, k) => k).sort((a, b) => list[a].time - list[b].time);
+    chapters[i] = order.map((k) => list[k]);
+    chapterRows[i] = order.map((k) => chapterRows[i][k]);
+    if (chapters[i].length && chapters[i][0].time > 0)
+      warnings.push(at(CHAPTER_SHEET, chapterRows[i][0], `chương đầu tiên của video ${i + 1} bắt đầu ở ${mmss(chapters[i][0].time)}. Nên thêm một chương ở 00:00 để học viên quay về được đoạn đầu video`));
+  });
+
   const totalSize = files.reduce((s, f) => s + (f.file.size || 0), 0);
   if (totalSize > SIZE_LIMIT)
     errors.push(`Tổng dung lượng ${(totalSize / 1024 ** 3).toFixed(2)} GB, vượt giới hạn 4 GB của Workday. Hãy nén video nhỏ hơn (720p)`);
@@ -296,7 +360,11 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
     description: cell(info["Mô tả ngắn"]),
     logo: logoSrc ? "assets/" + logo : null,
     settings,
-    videos: videos.map((v) => ({ title: v.title, src: "videos/" + v.file, duration: duration(v), ...(v.docs.length ? { docs: v.docs } : {}) })),
+    videos: videos.map((v, i) => ({
+      title: v.title, src: "videos/" + v.file, duration: duration(v),
+      ...(v.docs.length ? { docs: v.docs } : {}),
+      ...(chapters[i].length ? { chapters: chapters[i] } : {}),
+    })),
     popups,
     quiz,
   };

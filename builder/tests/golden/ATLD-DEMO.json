@@ -30,7 +30,8 @@
    "timeLimitMinutes": 10,
    "showAnswers": true,
    "maxSpeed": 2,
-   "contact": "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại."
+   "contact": "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD: Mr. Minh (minhvt02@coteccons.vn) hoặc cta@coteccons.vn để được hỗ trợ đăng ký lại.",
+   "reference": false
   },
   "videos": [
    {
@@ -41,6 +42,20 @@
      {
       "title": "slide-bai-1",
       "src": "docs/slide-bai-1.pdf"
+     }
+    ],
+    "chapters": [
+     {
+      "time": 0,
+      "title": "Mở đầu"
+     },
+     {
+      "time": 20,
+      "title": "An toàn là trên hết"
+     },
+     {
+      "time": 42,
+      "title": "Trách nhiệm của mỗi người"
      }
     ]
    },
@@ -61,6 +76,16 @@
      {
       "title": "checklist-moi-nguy",
       "src": "docs/checklist-moi-nguy.pdf"
+     }
+    ],
+    "chapters": [
+     {
+      "time": 0,
+      "title": "Mối nguy là gì"
+     },
+     {
+      "time": 30,
+      "title": "Khi phát hiện mối nguy"
      }
     ]
    }

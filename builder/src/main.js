@@ -4,7 +4,7 @@ import { readCourse, formatDuration } from "./course.js";
 import { writePackage, memorySink, diskSink } from "./package.js";
 import { renderPopupStep } from "./popups.js";
 import { renderPreviewStep, closePreview } from "./preview.js";
-import { VIDEO_EXT, ignored, esc } from "./util.js";
+import { VIDEO_EXT, ignored, esc, mmss } from "./util.js";
 
 const $ = (id) => document.getElementById(id);
 const mb = (n) => (n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2) + " GB" : Math.max(0.1, n / 1024 ** 2).toFixed(1) + " MB");
@@ -226,7 +226,9 @@ function render({ course, errors, warnings, files, totalSize }, folder) {
   }
   const S = course.settings;
   const total = course.videos.reduce((s, v) => s + v.duration, 0);
-  const exam = course.quiz.length
+  const exam = S.reference
+    ? "Khóa Tham khảo: mở bài nào cũng được, tua tự do, không có pop-up và bài kiểm tra. Học viên mở khóa là hoàn thành"
+    : course.quiz.length
     ? [`Đạt từ ${S.passScore}%`, `${S.maxAttempts} lượt`,
        S.questionsPerAttempt ? `${S.questionsPerAttempt} câu mỗi lần (rút từ ${course.quiz.length})` : `cả ${course.quiz.length} câu mỗi lần`,
        S.timeLimitMinutes ? `${S.timeLimitMinutes} phút` : "không giới hạn thời gian",
@@ -234,6 +236,7 @@ function render({ course, errors, warnings, files, totalSize }, folder) {
     : "Không có bài kiểm tra: hoàn thành khi xem hết video";
 
   const popupsOf = (i) => course.popups.filter((p) => p.video === i).length;
+  const nChapters = course.videos.reduce((s, v) => s + (v.chapters || []).length, 0);
   const again = state.source.kind === "handle" ? "Sửa xong, lưu file rồi bấm Kiểm tra lại." : "Sửa xong, lưu file rồi chọn lại thư mục khóa.";
   let html = errors.length
     ? `<div class="verdict bad">Còn ${errors.length} lỗi cần sửa trong file Excel. ${again}</div>`
@@ -244,18 +247,21 @@ function render({ course, errors, warnings, files, totalSize }, folder) {
   html += `<h3>Tóm tắt khóa học</h3><div class="summary">
     <div class="wide"><small>Tên khóa</small><b>${esc(course.title)}</b></div>
     <div><small>Mã khóa</small><b>${esc(course.id)}</b></div>
+    <div><small>Loại khóa</small><b>${S.reference ? "Tham khảo" : "Bắt buộc"}</b></div>
     <div><small>Dung lượng</small><b>${mb(totalSize)}</b></div>
     <div><small>Số video</small><b>${course.videos.length}</b></div>
     <div><small>Tổng thời lượng</small><b>${formatDuration(total)}</b></div>
     <div><small>Câu pop-up</small><b>${course.popups.length}</b></div>
     <div><small>Câu ngân hàng đề</small><b>${course.quiz.length}</b></div>
     <div><small>Video có tài liệu PDF</small><b>${course.videos.filter((v) => v.docs).length}/${course.videos.length}</b></div>
-    <div class="wide" style="grid-column: span 3"><small>Luật bài kiểm tra</small><b>${esc(exam)}</b></div>
+    <div><small>Số chương</small><b>${nChapters}</b></div>
+    <div class="wide" style="grid-column: 1 / -1"><small>${S.reference ? "Luật học" : "Luật bài kiểm tra"}</small><b>${esc(exam)}</b></div>
   </div>`;
   if (course.videos.length) {
     const docsOf = (v) => (v.docs || []).map((d) => esc(d.src.slice(5))).join("<br>") || "–";
-    html += `<table><thead><tr><th>#</th><th>Tên bài</th><th>File video</th><th>Thời lượng</th><th>Pop-up</th><th>Tài liệu</th></tr></thead><tbody>${course.videos
-      .map((v, i) => `<tr><td>${i + 1}</td><td>${esc(v.title)}</td><td>${esc(v.src.slice(7))}</td><td>${v.duration ? formatDuration(v.duration) : "–"}</td><td>${popupsOf(i)}</td><td>${docsOf(v)}</td></tr>`)
+    const chaptersOf = (v) => (v.chapters || []).map((c) => `${mmss(c.time)} ${esc(c.title)}`).join("<br>") || "–";
+    html += `<table><thead><tr><th>#</th><th>Tên bài</th><th>File video</th><th>Thời lượng</th><th>Pop-up</th><th>Tài liệu</th><th>Chương</th></tr></thead><tbody>${course.videos
+      .map((v, i) => `<tr><td>${i + 1}</td><td>${esc(v.title)}</td><td>${esc(v.src.slice(7))}</td><td>${v.duration ? formatDuration(v.duration) : "–"}</td><td>${popupsOf(i)}</td><td>${docsOf(v)}</td><td>${chaptersOf(v)}</td></tr>`)
       .join("")}</tbody></table>`;
   }
   showCheck(html);
@@ -276,6 +282,8 @@ function render({ course, errors, warnings, files, totalSize }, folder) {
     renderPopupStep($("popups"), {
       key: state.folderName, videos,
       existing: course.popups.map((p) => ({ path: videos[p.video].path, time: p.time })),
+      existingChapters: course.videos.flatMap((v, i) => (v.chapters || []).map((c) => ({ path: videos[i].path, time: c.time }))),
+      reference: S.reference,
     });
   }
   if (!errors.length) {

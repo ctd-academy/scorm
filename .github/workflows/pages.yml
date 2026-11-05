@@ -35,7 +35,7 @@ jobs:
       - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - run: npm ci
         working-directory: builder
-      # test logic + 43 test Player + test giao diện Builder; cũng tạo builder/dist để đưa lên Pages
+      # test logic + test Player + test giao diện Builder; cũng tạo builder/dist để đưa lên Pages
       - run: bash tests/run_all.sh
       - if: failure()
         uses: actions/upload-artifact@v4

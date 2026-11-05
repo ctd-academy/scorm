@@ -15,5 +15,7 @@ window.API={
 };
 window.lmsStore=function(){return store};
 </script>
-<iframe id="f" src="course/index.html" style="width:1280px;height:900px;border:0" allow="autoplay"></iframe>
+<!-- lms.html?course=course-ref mở gói ở thư mục khác (test khóa Tham khảo) -->
+<iframe id="f" style="width:1280px;height:900px;border:0" allow="autoplay"></iframe>
+<script>document.getElementById("f").src = (new URLSearchParams(location.search).get("course") || "course") + "/index.html";</script>
 </body></html>

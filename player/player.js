@@ -11,6 +11,11 @@
      điểm đạt, số lượt); hết lượt -> khóa bài thi, liên hệ L&OD
    - Tài liệu PDF theo từng video (không bắt buộc): xem song song khi video
      đang chạy, không có nút tải/in, ẩn khi làm bài thi
+   - Chương (không bắt buộc): danh sách dưới video, bấm để nhảy tới đoạn đó;
+     khóa Bắt buộc chỉ bấm được chương đã xem tới
+   Khóa "Tham khảo" (settings.reference, cho tài liệu hướng dẫn): mở bài nào cũng được,
+   tua tự do, chuyển tab không dừng video, không pop-up, không bài thi, mở khóa là
+   báo "completed". Vẫn tối đa 2x, tài liệu PDF vẫn không tải/in được.
    ============================================================ */
 (function () {
   "use strict";
@@ -28,9 +33,10 @@
     // course.js luôn có nội dung liên hệ (mặc định ở builder/src/defaults.json); câu dưới chỉ để phòng hờ
     contact: D.contact || "Bạn đã dùng hết lượt làm bài. Vui lòng liên hệ L&OD để được hỗ trợ đăng ký lại."
   };
+  var REF = !!D.reference;  // khóa Tham khảo
   var VIDEOS = C.videos || [];
-  var POPUPS = (C.popups || []).map(function (p, i) { p.id = i; return p; });
-  var QUIZ = C.quiz || [];
+  var POPUPS = REF ? [] : (C.popups || []).map(function (p, i) { p.id = i; return p; });
+  var QUIZ = REF ? [] : C.quiz || [];
   var HAS_QUIZ = QUIZ.length > 0;
   var N_Q = SET.questionsPerAttempt > 0 ? Math.min(SET.questionsPerAttempt, QUIZ.length) : QUIZ.length;
   var SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2].filter(function (s) { return s <= SET.maxSpeed; });
@@ -85,7 +91,10 @@
   }
 
   function pushStatus() {
-    if (HAS_QUIZ) {
+    if (REF) {
+      // Tham khảo: mở khóa là hoàn thành
+      SCORM.set("cmi.core.lesson_status", "completed");
+    } else if (HAS_QUIZ) {
       if (S.s >= 0) {
         SCORM.set("cmi.core.score.min", 0); SCORM.set("cmi.core.score.max", 100);
         SCORM.set("cmi.core.score.raw", S.s);
@@ -98,9 +107,9 @@
   }
 
   function allVideosDone() { for (var i = 0; i < S.v.length; i++) if (!S.v[i][2]) return false; return true; }
-  function unlocked(i) { return i === 0 || (S.v[i - 1] && S.v[i - 1][2] === 1); }
+  function unlocked(i) { return REF || i === 0 || (S.v[i - 1] && S.v[i - 1][2] === 1); }
   function firstOpen() { for (var i = 0; i < VIDEOS.length; i++) if (!S.v[i][2]) return i; return HAS_QUIZ ? "quiz" : Math.max(0, VIDEOS.length - 1); }
-  function courseDone() { return HAS_QUIZ ? S.q === 1 : allVideosDone(); }
+  function courseDone() { return REF || (HAS_QUIZ ? S.q === 1 : allVideosDone()); }
 
   // ---------------------------------------------------------------- khung chung
   function renderShell() {
@@ -117,6 +126,12 @@
   }
 
   function renderProgress() {
+    if (REF) {
+      // Tham khảo: đã hoàn thành ngay khi mở, không cần % tiến độ
+      document.body.classList.add("ref");
+      $("tocLabel").textContent = "Mục lục · " + VIDEOS.length + " bài";
+      return;
+    }
     var total = VIDEOS.length + (HAS_QUIZ ? 1 : 0), done = 0;
     S.v.forEach(function (x) { if (x[2]) done++; });
     if (HAS_QUIZ && S.q === 1) done++;
@@ -130,10 +145,11 @@
     var h = "";
     VIDEOS.forEach(function (v, i) {
       var done = S.v[i][2] === 1, open = unlocked(i);
-      var cls = (view === i ? "active " : "") + (done ? "done " : "") + (!open ? "locked" : "");
+      var cls = (view === i ? "active " : "") + (done && !REF ? "done " : "") + (!open ? "locked" : "");
+      var nch = (v.chapters || []).length;
       h += '<li class="' + cls + '"><button data-i="' + i + '"' + (open ? "" : " disabled") + '>' +
-        '<span class="ic">' + (done ? "✓" : (open ? i + 1 : "🔒")) + "</span>" +
-        "<span>" + esc(v.title) + '<span class="meta">' + (v.duration ? fmt(v.duration) : "Video") + "</span></span></button></li>";
+        '<span class="ic">' + (done && !REF ? "✓" : (open ? i + 1 : "🔒")) + "</span>" +
+        "<span>" + esc(v.title) + '<span class="meta">' + (v.duration ? fmt(v.duration) : "Video") + (nch ? " · " + nch + " chương" : "") + "</span></span></button></li>";
     });
     if (HAS_QUIZ) {
       var qOpen = allVideosDone();
@@ -175,19 +191,27 @@
     var v = VIDEOS[i], st = S.v[i];
     var pops = POPUPS.filter(function (p) { return p.video === i; }).sort(function (a, b) { return a.time - b.time; });
     var speedOpts = SPEEDS.map(function (s) { return '<option value="' + s + '"' + (s === curRate ? " selected" : "") + ">" + s + "x</option>"; }).join("");
-    var nextLabel = i < VIDEOS.length - 1 ? "Bài tiếp theo →" : (HAS_QUIZ ? "Làm bài kiểm tra →" : "Hoàn thành");
+    var last = i === VIDEOS.length - 1;
+    var nextLabel = !last ? "Bài tiếp theo →" : (HAS_QUIZ ? "Làm bài kiểm tra →" : "Hoàn thành");
+    var showNext = !(REF && last);   // Tham khảo: bài cuối không cần nút "Hoàn thành"
+    var nextOpen = REF || st[2];
 
     var docs = v.docs || [];
+    var chaps = v.chapters || [];
     $("main").innerHTML =
       "<h2>" + esc(v.title) + "</h2>" +
-      '<div class="sub">Bài ' + (i + 1) + "/" + VIDEOS.length + (pops.length ? " · " + pops.length + " câu hỏi giữa bài" : "") + "</div>" +
+      '<div class="sub">Bài ' + (i + 1) + "/" + VIDEOS.length + (pops.length ? " · " + pops.length + " câu hỏi giữa bài" : "") +
+        (chaps.length ? " · " + chaps.length + " chương" : "") + "</div>" +
       '<div class="lesson" id="lesson"><div class="lesson-video">' +
       '<div class="vwrap"><video id="vid" playsinline preload="metadata" controls controlsList="nodownload noplaybackrate" disablePictureInPicture src="' + esc(v.src) + '"></video>' +
       '<div class="overlay" id="pop"></div></div>' +
       '<div class="vbar"><span class="watch" id="watch"></span>' +
       '<label>Tốc độ <select id="speed">' + speedOpts + "</select></label></div>" +
+      (chaps.length ? '<div class="chapters"><h3>Chương trong bài này (' + chaps.length + ')</h3><ol id="chapList">' +
+        chaps.map(function (c, k) { return '<li><button data-k="' + k + '"><span class="ct">' + fmt(c.time) + "</span><span>" + esc(c.title) + "</span></button></li>"; }).join("") +
+        "</ol></div>" : "") +
       '<div class="next-row">' + (docs.length ? '<button class="btn" id="docBtn">📄 Tài liệu' + (docs.length > 1 ? " (" + docs.length + ")" : "") + "</button>" : "") +
-      '<button class="btn primary" id="nextBtn"' + (st[2] ? "" : " disabled") + ">" + nextLabel + "</button></div>" +
+      (showNext ? '<button class="btn primary" id="nextBtn"' + (nextOpen ? "" : " disabled") + ">" + nextLabel + "</button>" : "") + "</div>" +
       '</div><aside class="doc" id="doc" hidden></aside></div>';
     if (docs.length) {
       $("docBtn").onclick = function () { if (docView) closeDoc(); else openDoc(docs, 0); };
@@ -201,11 +225,40 @@
     var maxW = st[0], seekGuard = false;
 
     function updateWatch() {
+      updateChapters();
+      if (REF) {
+        var d = vid && isFinite(vid.duration) ? vid.duration : v.duration || 0;
+        $("watch").innerHTML = d ? "Thời lượng <b>" + fmt(d) + "</b>" : "";
+        return;
+      }
       var passed = pops.filter(function (p) { return S.p.indexOf(p.id) >= 0; }).length;
       var dur = vid && isFinite(vid.duration) ? vid.duration : v.duration || 0;
       $("watch").innerHTML = (st[2] ? "<b>✓ Đã hoàn thành</b>" : "Đã xem tới <b>" + fmt(maxW) + "</b>" + (dur ? " / " + fmt(dur) : "")) +
         (pops.length ? " · Câu hỏi: <b>" + passed + "/" + pops.length + "</b>" : "");
     }
+
+    // Chương: tô chương đang phát; khóa Bắt buộc làm mờ chương chưa xem tới
+    var chapBtns = chaps.length ? $("chapList").querySelectorAll("button") : [];
+    function chapterLocked(k) { return !REF && chaps[k].time > maxW + 0.75; }
+    function updateChapters() {
+      if (!chaps.length || !vid) return;
+      var t = vid.currentTime, cur = -1;
+      for (var k = 0; k < chaps.length; k++) if (chaps[k].time <= t + 0.25) cur = k;
+      Array.prototype.forEach.call(chapBtns, function (b, k) {
+        b.classList.toggle("now", k === cur);
+        b.classList.toggle("locked", chapterLocked(k));
+        b.setAttribute("aria-current", k === cur ? "true" : "false");
+      });
+    }
+    Array.prototype.forEach.call(chapBtns, function (b, k) {
+      b.onclick = function () {
+        if (popupOpen) { toast("Hãy trả lời câu hỏi trước"); return; }
+        if (chapterLocked(k)) { toast("Bạn chỉ có thể tua lại phần đã xem"); return; }
+        vid.currentTime = chaps[k].time;
+        updateChapters();
+        var pr = vid.play(); if (pr && pr.catch) pr.catch(function () {});
+      };
+    });
     updateWatch();
 
     $("speed").onchange = function () { curRate = parseFloat(this.value); vid.playbackRate = curRate; };
@@ -222,19 +275,19 @@
       if (vid.playbackRate > SET.maxSpeed) { vid.playbackRate = SET.maxSpeed; toast("Tốc độ tối đa là " + SET.maxSpeed + "x"); }
     });
     on("seeking", function () {
-      if (seekGuard) return;
+      if (seekGuard || REF) return;
       if (vid.currentTime > maxW + 0.75) {
         seekGuard = true;
         vid.currentTime = maxW;
         toast("Bạn chỉ có thể tua lại phần đã xem");
       }
     });
-    on("seeked", function () { seekGuard = false; });
+    on("seeked", function () { seekGuard = false; updateChapters(); });
     on("play", function () { if (popupOpen) vid.pause(); });
     on("timeupdate", function () {
       if (seekGuard || popupOpen) return;
       var t = vid.currentTime;
-      if (t > maxW && t - maxW < 3) maxW = t;
+      if (t > maxW && (REF || t - maxW < 3)) maxW = t;
       st[0] = Math.max(st[0], maxW); st[1] = t;
       // pop-up chưa trả lời đúng gần nhất trong video này
       for (var k = 0; k < pops.length; k++) {
@@ -257,6 +310,7 @@
       st[2] = 1; st[0] = Math.max(st[0], vid.duration || st[0]);
       pushStatus(); save(true);
       renderToc(); updateWatch();
+      if (REF) return;   // Tham khảo: không có gì để mở khóa
       $("nextBtn").disabled = false;
       toast(i < VIDEOS.length - 1 ? "Hoàn thành bài " + (i + 1) + ". Bài tiếp theo đã mở." : (HAS_QUIZ ? "Bạn đã xem hết video. Bài kiểm tra đã mở." : "Bạn đã hoàn thành khóa học!"));
     }
@@ -303,7 +357,7 @@
       });
     }
 
-    $("nextBtn").onclick = function () {
+    if (showNext) $("nextBtn").onclick = function () {
       if (i < VIDEOS.length - 1) go(i + 1);
       else if (HAS_QUIZ) go("quiz");
       else renderCourseDone();
@@ -457,7 +511,9 @@
   }
 
   // Rời trang / chuyển tab -> dừng video
+  // (khóa Tham khảo: không dừng, học viên có thể vừa xem vừa làm theo trên phần mềm khác)
   document.addEventListener("visibilitychange", function () {
+    if (REF) return;
     if (document.hidden && vid && !vid.paused) { vid.pause(); toast("Video đã tạm dừng vì bạn rời khỏi trang"); }
   });
 
@@ -586,7 +642,8 @@
     var s = Math.floor((Date.now() - startedAt) / 1000);
     var hh = Math.floor(s / 3600), mm = Math.floor(s % 3600 / 60), ss = s % 60;
     SCORM.set("cmi.core.session_time", (hh < 10 ? "000" : hh < 100 ? "00" : "0") + hh + ":" + (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss);
-    SCORM.set("cmi.core.exit", courseDone() || S.q === 2 ? "" : "suspend");
+    // Tham khảo: đã "completed" nhưng vẫn "suspend" để lần sau mở lại đúng bài, đúng chỗ đang xem
+    SCORM.set("cmi.core.exit", !REF && (courseDone() || S.q === 2) ? "" : "suspend");
     save(true);
     SCORM.finish();
   }

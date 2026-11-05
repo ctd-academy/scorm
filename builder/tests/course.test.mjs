@@ -214,3 +214,56 @@ test("đọc được file Excel ghi thẻ có tiền tố namespace (<x:sheet>,
   assert.deepEqual(Object.keys(prefixed), Object.keys(readXlsx(readFileSync(XLSX))));
   assert.deepEqual(prefixed["Câu hỏi"], readXlsx(readFileSync(XLSX))["Câu hỏi"]);
 });
+
+test("Loại khóa: để trống/Bắt buộc = bắt buộc; Tham khảo bỏ qua sheet Câu hỏi; ghi sai thì báo lỗi", () => {
+  const { sheets, folder } = demo();
+  const info = sheets["Thông tin khóa"];
+  assert.equal(info[12][1], "Loại khóa");
+  info[12][2] = "";
+  assert.equal(readCourse(sheets, folder).course.settings.reference, false);
+  info[12][2] = "tham khao"; // gõ không dấu, chữ thường vẫn nhận
+  sheets["Câu hỏi"][7][9] = "E"; // câu hỏi lỗi: khóa Tham khảo không kiểm tra sheet Câu hỏi
+  const r = readCourse(sheets, folder);
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.course.settings.reference, true);
+  assert.deepEqual([r.course.popups, r.course.quiz], [[], []]);
+  assert.deepEqual(r.warnings, ["Khóa Tham khảo không có pop-up và bài kiểm tra: 10 câu hỏi trong sheet Câu hỏi sẽ bị bỏ qua"]);
+  info[12][2] = "Tự do";
+  sheets["Câu hỏi"][7][9] = "B";
+  assert.deepEqual(readCourse(sheets, folder).errors, ["Sheet Thông tin khóa, dòng 12: 'Loại khóa' phải là 'Bắt buộc' hoặc 'Tham khảo', đang là 'Tự do'"]);
+});
+
+test("Excel mẫu cũ (không có dòng Loại khóa, không có sheet Chương): như trước", () => {
+  const { sheets, folder } = demo();
+  sheets["Thông tin khóa"][12] = [];
+  delete sheets["Chương"];
+  const { course, errors } = readCourse(sheets, folder);
+  assert.deepEqual(errors, []);
+  assert.equal(course.settings.reference, false);
+  assert.ok(course.videos.every((v) => !v.chapters));
+});
+
+test("Chương: xếp theo thời gian, báo lỗi đúng dòng, cảnh báo trùng mốc và thiếu 00:00", () => {
+  const { sheets, folder } = demo();
+  const ch = sheets["Chương"];
+  ch[3] = [, 1, "00:42", "Trách nhiệm"];  // nhập lộn thứ tự
+  ch[5] = [, 1, "00:00", "Mở đầu"];
+  ch[6] = [, 3, "00:30", "Khi phát hiện mối nguy"];
+  ch[7] = [, 3, "00:30", "Trùng mốc"];   // trùng mốc: cảnh báo, giữ dòng 6
+  delete ch[8];                           // video 3 không còn chương ở 00:00
+  ch[9] = [, 4, "00:10", "Video không có"];
+  ch[10] = [, 2, "1.30", "Sai mốc"];
+  ch[11] = [, 2, "02:00", "Quá thời lượng"];
+  ch[12] = [, 2, "00:10", ""];
+  const { course, errors, warnings } = readCourse(sheets, folder, ffDurations(folder));
+  assert.deepEqual(errors, [
+    "Sheet Chương, dòng 9: 'Video số' phải từ 1 đến 3, đang là '4'",
+    "Sheet Chương, dòng 10: mốc thời gian '1.30' phải có dạng phút:giây, ví dụ 03:20",
+    "Sheet Chương, dòng 11: mốc 02:00 vượt quá thời lượng video 2 (00:55)",
+    "Sheet Chương, dòng 12: chưa điền tên chương",
+  ]);
+  assert.ok(warnings.includes("Sheet Chương, dòng 7: chương 'Trùng mốc' trùng mốc 00:30 với chương ở dòng 6 (video 3). Chỉ giữ chương ở dòng 6"), warnings.join("\n"));
+  assert.ok(warnings.includes("Sheet Chương, dòng 6: chương đầu tiên của video 3 bắt đầu ở 00:30. Nên thêm một chương ở 00:00 để học viên quay về được đoạn đầu video"), warnings.join("\n"));
+  assert.deepEqual(course.videos[0].chapters.map((c) => c.time), [0, 20, 42]);
+  assert.deepEqual(course.videos[2].chapters, [{ time: 30, title: "Khi phát hiện mối nguy" }]);
+});
