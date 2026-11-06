@@ -9,7 +9,9 @@ Coteccons (tập đoàn xây dựng, ~4.000 nhân viên) chuyển ~150 khóa e-l
 | Phần | Trạng thái | Vai trò |
 |---|---|---|
 | `player/` | ✅ Xong, 62/62 test đạt (có tài liệu PDF, chương, khóa Tham khảo) | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
-| `builder/` | 🟡 **M1–M3 xong** (kiểm tra lỗi, đặt pop-up, xem thử, xuất zip SCORM); M4: đã có trang hướng dẫn cho trainer (`builder/huong-dan.html`), còn trainer đọc thử + thử Edge | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
+| `builder/` | ✅ **M1–M3.3 xong, đang chạy trên web** (kiểm tra lỗi, đặt pop-up và chương, xem thử, xuất zip SCORM). 🟡 M4: trang hướng dẫn trainer đã lên web (`builder/huong-dan.html`), còn trainer đọc thử + thử Edge | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
+
+**Tình trạng (05/11/2026):** chưa dùng thật. Việc đang chờ: thử Edge · thử khóa Tham khảo trên SCORM Cloud/Workday sandbox · trainer đọc thử hướng dẫn · pilot 3 khóa trên Workday sandbox rồi bổ sung các bước Workday vào hướng dẫn. Chi tiết: `docs/HANDOFF.md` mục 11.
 
 Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&OD, không phải lập trình viên.
 
@@ -31,13 +33,16 @@ Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&O
 5. **Một động cơ đóng gói** (28/10/2026): `builder/src/` (`xlsx.js`, `course.js`, `package.js`, `zip.js`) dùng chung cho website và lệnh `builder/scripts/build-scorm.mjs`. Đã bỏ bản Python `tools/build_scorm.py`; gói khóa demo so với gói mẫu `builder/tests/golden/ATLD-DEMO.json`.
 6. Luật chơi Player: học tuần tự · chỉ tua lại phần đã xem · tối đa 2x · chuyển tab thì dừng · pop-up không tính điểm, sai thì chọn lại tới khi đúng (không phải xem lại video), đúng thì lưu ngay · bài thi tùy chỉnh theo khóa · hết lượt thì báo `failed`, khóa bài thi, hiện liên hệ L&OD · chứng nhận do Workday cấp · tài liệu PDF theo từng video (không bắt buộc): xem song song khi video chạy, không có nút tải/in, ẩn khi làm bài thi, không in tên học viên · chương theo từng video (không bắt buộc): bấm để nhảy tới, khóa Bắt buộc chỉ bấm được chương đã xem tới.
    **Hai loại khóa** (05/11/2026, dòng "Loại khóa"): luật trên là khóa **Bắt buộc** (mặc định). Khóa **Tham khảo** (tài liệu hướng dẫn): mở bài nào cũng được, tua tự do, chuyển tab không dừng, không pop-up, không bài thi, mở khóa là `completed`; vẫn tối đa 2x, PDF vẫn không tải/in.
-7. **Host:** repo `ctd-academy/scorm` (tài khoản team) và host trên **GitHub Pages**.
+7. **Host:** repo `ctd-academy/scorm` (tài khoản team) và host trên **GitHub Pages** (https://ctd-academy.github.io/scorm/).
 8. **Không dùng Lovable** cho phần lõi (đóng gói, Player). Có thể dùng để phác giao diện.
+9. **Hướng dẫn cho trainer là trang web trong Builder** (`builder/huong-dan.html`, nút "📖 Hướng dẫn"), đi từ đơn giản tới chi tiết. Đổi giao diện Builder, cột Excel, thông báo lỗi hoặc luật học thì **sửa trang này cho khớp**.
 
 ## Ghi chú riêng cho Claude Code
 
 - Môi trường cloud của Claude: Chromium có sẵn ở `/opt/pw-browsers/chromium`; Playwright Python có thể đòi bản khác và không tải được → chạy test với `CHROME_PATH=/opt/pw-browsers/chromium bash tests/run_all.sh`.
 - Không cài được gì từ cdn.sheetjs.com hay cdn.playwright.dev.
+- Môi trường mới: `(cd builder && npm install)` và `pip install -r tests/requirements.txt` trước khi chạy test.
+- Alex hay merge PR ngay khi test xanh. Làm tiếp trên nhánh có PR đã merge: tạo lại nhánh từ `origin/main`; nếu nhánh đã có commit mới thì gộp `main` vào bằng merge commit (không force-push được).
 
 ## Định nghĩa "xong" cho mỗi thay đổi
 
