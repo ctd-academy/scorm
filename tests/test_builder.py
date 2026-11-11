@@ -364,6 +364,43 @@ with sync_playwright() as p:
           fr6.evaluate("document.querySelectorAll('#tocList li').length") == 3 and fr6.evaluate("document.querySelectorAll('#tocList li.locked').length") == 0)
     page6.close()
 
+    # ---- Khóa chỉ có bài kiểm tra: thư mục chỉ có file Excel, sheet Video/Chương trống, không pop-up
+    qonly = os.path.join(tmp, "Chi bai kiem tra")
+    os.makedirs(qonly)
+    wb = load_workbook(os.path.join(DEMO, "ATLD-DEMO.xlsx"))
+    for name, last in (("Video", 5), ("Chương", 7), ("Câu hỏi", 6)):   # Câu hỏi dòng 2-6: ví dụ + 4 pop-up
+        for row in wb[name].iter_rows(min_row=2, max_row=last):
+            for c in row:
+                c.value = None
+    wb.save(os.path.join(qonly, "ATLD-DEMO.xlsx"))
+    page7 = b.new_page(viewport={"width": 1366, "height": 768})
+    page7.add_init_script(SAVE_STUB)
+    page7.on("pageerror", lambda e: errors.append(str(e)))
+    load_demo(page7, folder=qonly)
+    s7 = page7.inner_text(".summary")
+    check("Chỉ bài kiểm tra: không có lỗi, tóm tắt 0 video · 6 câu, ghi rõ chỉ có bài kiểm tra",
+          page7.locator(".verdict.ok").count() == 1 and "Số video\n0" in s7 and "Câu ngân hàng đề\n6" in s7
+          and "Khóa chỉ có bài kiểm tra, không có video" in s7, page7.inner_text("#check")[:400])
+    check("Chỉ bài kiểm tra: nhắc sheet Video trống", "Sheet Video trống: khóa chỉ có bài kiểm tra" in page7.inner_text(".list.warnings"))
+    page7.screenshot(path=SHOTS + "10_chi_bai_kiem_tra.png", full_page=True)
+    page7.click("#pvOpen")
+    page7.wait_for_selector("#pvFrame")
+    page7.frame_locator("#pvFrame").locator("#tocList li").first.wait_for()
+    fr7 = next(x for x in page7.frames if x.url.endswith("/player/preview.html"))
+    check("Chỉ bài kiểm tra: xem thử vào thẳng bài kiểm tra",
+          fr7.evaluate("document.querySelectorAll('#tocList li').length") == 1 and fr7.evaluate("!!document.getElementById('startQuiz')"))
+    page7.click("#exportBtn")
+    page7.wait_for_selector("#exportState .verdict", timeout=60000)
+    with page7.expect_download() as dl:
+        page7.evaluate(PULL_SAVED)
+    qzip = os.path.join(tmp, "quiz-only.zip")
+    dl.value.save_as(qzip)
+    zq = zip_info(qzip)
+    check("Chỉ bài kiểm tra: xuất gói được, không có video, đủ 6 câu",
+          zq["bad"] is None and not any(n.startswith("videos/") for n in zq["names"]) and zq["course"]["videos"] == [] and len(zq["course"]["quiz"]) == 6,
+          [n for n in zq["names"] if not n.startswith("player") and not n.startswith("pdfjs")][:20])
+    page7.close()
+
     # ---- Trình duyệt không có showSaveFilePicker (Firefox/Safari): tải về từ bộ nhớ
     page2 = b.new_page(viewport={"width": 1366, "height": 768})
     page2.add_init_script(NO_PICKER)
