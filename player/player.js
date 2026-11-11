@@ -8,7 +8,9 @@
    - Pop-up: không tính điểm; trả lời sai -> chọn lại tới khi đúng (không phải xem
      lại video); trả lời đúng -> lưu ngay
    - Bài thi cuối: tùy chỉnh theo khóa (số câu, thời gian, hiện đáp án,
-     điểm đạt, số lượt); hết lượt -> khóa bài thi, liên hệ L&OD
+     điểm đạt, số lượt); hết lượt -> khóa bài thi, liên hệ L&OD. Làm từng câu,
+     đi lại tự do, chỉ nộp khi đã trả lời hết (hết giờ thì tự nộp). Lưu bài làm dở:
+     đóng cửa sổ thì mở lại làm tiếp lượt đó; rời sang video trong khóa thì mất lượt
    - Tài liệu PDF theo từng video (không bắt buộc): xem song song khi video
      đang chạy, không có nút tải/in, ẩn khi làm bài thi
    - Chương (không bắt buộc): danh sách dưới video, bấm để nhảy tới đoạn đó;
@@ -47,13 +49,24 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function $(id) { return document.getElementById(id); }
   function fmt(sec) { sec = Math.max(0, Math.floor(sec || 0)); var m = Math.floor(sec / 60), s = sec % 60; return m + ":" + (s < 10 ? "0" : "") + s; }
-  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function shuffle(a, rnd) { rnd = rnd || Math.random; a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  // Số ngẫu nhiên theo "hạt giống": cùng hạt giống -> cùng đề, cùng thứ tự đáp án (để làm tiếp lượt dở)
+  function seeded(seed) {
+    return function () {
+      seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
 
   // ---------------------------------------------------------------- trạng thái
   // v: [đã xem xa nhất (giây), vị trí lần cuối, xong 0/1] cho từng video
   // p: id các pop-up đã trả lời đúng · a: số lượt thi đã dùng
   // s: điểm cao nhất (-1 = chưa thi) · q: 0 chưa xong, 1 đạt, 2 hết lượt
-  var S = { v: [], p: [], a: 0, s: -1, q: 0 };
+  // w: lượt thi đang làm dở (null nếu không có): r = hạt giống rút đề, n = dấu đề (số câu/ngân hàng),
+  //    k = đáp án đã chọn mỗi câu ("0"-"3", "-" = chưa chọn), c = câu đang xem, d = hạn nộp (ms, 0 = không giới hạn)
+  var S = { v: [], p: [], a: 0, s: -1, q: 0, w: null };
   var startedAt = Date.now();
   var view = 0;            // số thứ tự video, hoặc "quiz"
   var curRate = 1;
@@ -70,15 +83,16 @@
     for (var i = 0; i < VIDEOS.length; i++) if (!S.v[i]) S.v[i] = [0, 0, 0];
     S.v.length = VIDEOS.length;
     S.p = S.p || []; S.a = S.a || 0; S.s = (S.s === undefined) ? -1 : S.s; S.q = S.q || 0;
-    // Lượt cuối bị bỏ dở (rời trang khi đang thi) cũng tính là đã dùng
-    if (HAS_QUIZ && S.q === 0 && S.a >= SET.maxAttempts) S.q = 2;
+    S.w = (HAS_QUIZ && S.q === 0 && S.w) ? S.w : null;
+    // Hết lượt mà không còn lượt dở để làm tiếp -> khóa bài thi
+    if (HAS_QUIZ && S.q === 0 && S.a >= SET.maxAttempts && !S.w) S.q = 2;
 
     var st = SCORM.get("cmi.core.lesson_status");
     if (st === "" || st === "not attempted") SCORM.set("cmi.core.lesson_status", "incomplete");
     pushStatus();
 
     var loc = SCORM.get("cmi.core.lesson_location");
-    if (loc === "quiz" && allVideosDone()) view = "quiz";
+    if ((loc === "quiz" || S.w) && allVideosDone()) view = "quiz";
     else { var n = parseInt(loc, 10); view = (!isNaN(n) && n >= 0 && n < VIDEOS.length && unlocked(n)) ? n : firstOpen(); }
   }
 
@@ -87,6 +101,7 @@
     if (!force && now - lastSave < 10000) return;
     lastSave = now;
     var compact = { v: S.v.map(function (x) { return [Math.round(x[0]), Math.round(x[1]), x[2]]; }), p: S.p, a: S.a, s: S.s, q: S.q };
+    if (S.w) compact.w = S.w;
     SCORM.set("cmi.suspend_data", JSON.stringify(compact));
     SCORM.set("cmi.core.lesson_location", String(view));
     SCORM.commit();
@@ -169,13 +184,16 @@
   }
 
   function go(target) {
-    if (quizTimer && view === "quiz" && target !== "quiz") {
+    if (S.w && view === "quiz" && target !== "quiz") {
+      // Rời bài thi để xem video (trong khóa học) thì bỏ lượt này; đóng cửa sổ thì làm tiếp được
       if (!confirm("Bạn đang làm bài. Rời đi bây giờ sẽ mất lượt này. Vẫn rời đi?")) return;
       stopTimer();
+      abandonAttempt();
     }
     if (vid) { if (typeof view === "number") S.v[view][1] = vid.currentTime; vid.pause(); vid.removeAttribute("src"); vid.load(); vid = null; }
     closeDocView();
     document.querySelector(".layout").classList.remove("doc-open");
+    $("main").classList.remove("noselect");
     view = target;
     save(true);
     renderToc();
@@ -525,7 +543,17 @@
   }
 
   // ---------------------------------------------------------------- bài kiểm tra
+  function abandonAttempt() {
+    S.w = null;
+    if (S.a >= SET.maxAttempts) S.q = 2;
+    pushStatus(); save(true);
+  }
+
   function renderQuiz() {
+    if (S.q === 0 && S.w) {
+      if (S.w.n === quizSig()) return runQuiz(true);
+      abandonAttempt();   // đề đã đổi (gói mới) -> không làm tiếp được, lượt đó tính đã dùng
+    }
     var left = Math.max(0, SET.maxAttempts - S.a);
     var head = "<h2>Bài kiểm tra cuối khóa</h2>";
 
@@ -549,37 +577,109 @@
       "<div><small>Điểm đạt</small><b>" + SET.passScore + "%</b></div>" +
       "<div><small>Lượt còn lại</small><b>" + left + "/" + SET.maxAttempts + "</b></div></div>" +
       (S.s >= 0 ? '<p class="sub">Điểm cao nhất của bạn: <b>' + S.s + "</b></p>" : "") +
-      '<div class="note">Lượt làm bài được tính ngay khi bạn bấm <b>Bắt đầu</b>. Rời trang hoặc đóng cửa sổ khi đang làm bài sẽ mất lượt đó.</div>' +
+      '<div class="note">Lượt làm bài được tính ngay khi bạn bấm <b>Bắt đầu</b>. Bài làm được lưu sau mỗi câu: lỡ đóng cửa sổ hoặc mất mạng thì mở lại khóa học để làm tiếp' +
+      (SET.timeLimitMinutes ? " (đồng hồ vẫn chạy trong lúc bạn rời đi)" : "") + ". Rời bài kiểm tra để xem lại video sẽ mất lượt đó.</div>" +
       '<div class="next-row"><button class="btn primary" id="startQuiz">Bắt đầu làm bài (lượt ' + (S.a + 1) + "/" + SET.maxAttempts + ")</button></div>";
     $("startQuiz").onclick = startQuiz;
   }
 
+  function quizSig() { return N_Q + "/" + QUIZ.length; }
+
   function startQuiz() {
-    S.a++; save(true);
-    var picked = shuffle(QUIZ).slice(0, N_Q).map(function (q) {
-      var order = shuffle(q.options.map(function (_, i) { return i; }));
+    S.a++;
+    S.w = { r: Math.floor(Math.random() * 2147483647), n: quizSig(), k: "", c: 0,
+            d: SET.timeLimitMinutes ? Date.now() + SET.timeLimitMinutes * 60000 : 0 };
+    save(true);
+    runQuiz(false);
+  }
+
+  function runQuiz(resumed) {
+    var W = S.w, rnd = seeded(W.r);
+    var picked = shuffle(QUIZ, rnd).slice(0, N_Q).map(function (q) {
+      var order = shuffle(q.options.map(function (_, i) { return i; }), rnd);
       return { q: q.q, options: order.map(function (i) { return q.options[i]; }), answer: order.indexOf(q.answer), explain: q.explain };
     });
 
+    // Mỗi màn 1 câu: các câu đều nằm trong trang, chỉ hiện câu đang làm (cur).
+    // Chỉ nộp được khi đã trả lời hết; hết giờ thì tự nộp (câu bỏ trống tính sai).
+    // Bài dài (trên 20 câu): dãy ô số thu gọn, bấm "Danh sách câu" mới mở.
+    var cur = 0, LONG = N_Q > 20;
     var h = '<h2>Bài kiểm tra cuối khóa</h2><div class="timer"><span>Lượt ' + S.a + "/" + SET.maxAttempts + " · " + N_Q + ' câu</span>' +
-      (SET.timeLimitMinutes ? '<span>Còn lại: <b id="clock"></b></span>' : '<span id="answered">Đã trả lời: 0/' + N_Q + "</span>") + "</div>";
+      (SET.timeLimitMinutes ? '<span>Còn lại: <b id="clock"></b></span>' : '<span id="answered"></span>') + "</div>";
+    h += '<div class="qmap" id="qMap"' + (LONG ? " hidden" : "") + ">";
+    picked.forEach(function (_, qi) { h += '<button type="button" data-q="' + qi + '" aria-label="Câu ' + (qi + 1) + '">' + (qi + 1) + "</button>"; });
+    h += '</div><div class="qpos"><span id="qPos"></span>' +
+      (LONG ? '<button type="button" class="linkbtn" id="qMapBtn" aria-expanded="false">Danh sách câu ▾</button>' : "") + "</div>";
     picked.forEach(function (q, qi) {
-      h += '<div class="qitem" id="q' + qi + '"><p>' + (qi + 1) + ". " + esc(q.q) + "</p>";
+      h += '<div class="qitem" id="q' + qi + '"' + (qi ? " hidden" : "") + "><p>" + (qi + 1) + ". " + esc(q.q) + "</p>";
       q.options.forEach(function (o, oi) {
         h += '<label><input type="radio" name="q' + qi + '" value="' + oi + '"><span>' + String.fromCharCode(65 + oi) + ". " + esc(o) + "</span></label>";
       });
       h += "</div>";
     });
-    h += '<div class="next-row"><button class="btn primary" id="submitQuiz">Nộp bài</button></div>';
+    h += '<div class="qnav"><button class="btn" id="qPrev">← Câu trước</button><button class="btn" id="qNext">Câu sau →</button></div>' +
+      '<div class="qsubmit"><span><span id="qLeft"></span> <button type="button" class="linkbtn" id="qTodo">Tới câu chưa làm</button></span>' +
+      '<button class="btn primary" id="submitQuiz" disabled>Nộp bài</button></div>';
     $("main").innerHTML = h;
+    $("main").classList.add("noselect");
 
-    $("main").onchange = (function () {
-      var a = $("answered"); if (a) a.textContent = "Đã trả lời: " + countAnswered() + "/" + N_Q;
+    function isAnswered(qi) { return !!$("main").querySelector("input[name=q" + qi + "]:checked"); }
+    function show(qi) {
+      cur = qi;
+      picked.forEach(function (_, k) { $("q" + k).hidden = k !== qi; });
+      refresh();
+      if (W.c !== qi) { W.c = qi; save(false); }
+    }
+    function refresh() {
+      var left = [];
+      picked.forEach(function (_, k) { if (!isAnswered(k)) left.push(k + 1); });
+      Array.prototype.forEach.call($("qMap").children, function (b, k) {
+        b.className = (isAnswered(k) ? "done " : "") + (k === cur ? "cur" : "");
+      });
+      $("qPos").textContent = "Câu " + (cur + 1) + "/" + N_Q + (LONG ? " · Đã trả lời " + (N_Q - left.length) + "/" + N_Q : "");
+      $("qPrev").disabled = cur === 0;
+      $("qNext").disabled = cur === N_Q - 1;
+      var a = $("answered"); if (a) a.textContent = "Đã trả lời: " + (N_Q - left.length) + "/" + N_Q;
+      $("submitQuiz").disabled = left.length > 0;
+      $("qLeft").textContent = !left.length ? "Bạn đã trả lời hết " + N_Q + " câu." :
+        "Trả lời hết các câu để nộp bài. Còn " + left.length + " câu" + (left.length <= 10 ? ": " + left.join(", ") : " chưa trả lời") + ".";
+      $("qTodo").hidden = !left.length || (left.length === 1 && left[0] === cur + 1);   // chỉ còn câu đang xem
+    }
+    // Lưu đáp án ngay mỗi lần chọn: lỡ đóng cửa sổ thì mở lại làm tiếp
+    $("main").onchange = function () {
+      W.k = picked.map(function (_, k) { var el = $("main").querySelector("input[name=q" + k + "]:checked"); return el ? el.value : "-"; }).join("");
+      save(true);
+      refresh();
+    };
+    $("qTodo").onclick = function () {
+      for (var k = 0; k < N_Q; k++) if (k !== cur && !isAnswered(k)) return show(k);   // câu chưa làm đầu tiên
+    };
+    if (LONG) $("qMapBtn").onclick = function () {
+      var open = $("qMap").hidden;
+      $("qMap").hidden = !open;
+      $("qMapBtn").textContent = open ? "Ẩn danh sách câu ▴" : "Danh sách câu ▾";
+      $("qMapBtn").setAttribute("aria-expanded", String(open));
+    };
+    $("qPrev").onclick = function () { if (cur > 0) show(cur - 1); };
+    $("qNext").onclick = function () { if (cur < N_Q - 1) show(cur + 1); };
+    Array.prototype.forEach.call($("qMap").children, function (b) {
+      b.onclick = function () { show(parseInt(b.getAttribute("data-q"), 10)); };
     });
-    function countAnswered() { return $("main").querySelectorAll("input:checked").length; }
+    // Làm tiếp lượt dở: chọn lại các đáp án đã lưu, mở đúng câu đang xem
+    for (var k = 0; k < N_Q; k++) {
+      var ch = W.k.charAt(k), el = ch && ch !== "-" && $("main").querySelector("input[name=q" + k + "][value='" + ch + "']");
+      if (el) el.checked = true;
+    }
+    show(W.c >= 0 && W.c < N_Q ? W.c : 0);
+    if (resumed) toast("Đang làm tiếp lượt " + S.a + "/" + SET.maxAttempts + ". Các câu đã trả lời vẫn được giữ.");
 
-    if (SET.timeLimitMinutes) {
-      var deadline = Date.now() + SET.timeLimitMinutes * 60000;
+    $("submitQuiz").onclick = function () {
+      if ($("submitQuiz").disabled) return;
+      stopTimer(); grade(picked);
+    };
+    // Đặt đồng hồ sau cùng: mở lại khi đã quá hạn thì tick() nộp bài ngay, thay luôn nội dung trang
+    if (W.d) {
+      var deadline = W.d;
       var tick = function () {
         var ms = deadline - Date.now(), c = $("clock");
         if (!c) return;
@@ -588,12 +688,6 @@
       };
       quizTimer = setInterval(tick, 500); tick();
     } else { quizTimer = true; }
-
-    $("submitQuiz").onclick = function () {
-      var n = countAnswered();
-      if (n < N_Q && !confirm("Bạn còn " + (N_Q - n) + " câu chưa trả lời. Vẫn nộp bài?")) return;
-      stopTimer(); grade(picked);
-    };
   }
 
   function stopTimer() { if (quizTimer && quizTimer !== true) clearInterval(quizTimer); quizTimer = null; }
@@ -608,6 +702,7 @@
     var score = N_Q ? Math.round(right / N_Q * 100) : 0;
     var passed = score >= SET.passScore;
     S.s = Math.max(S.s, score);
+    S.w = null;
     if (passed) { S.q = 1; S.s = Math.max(S.s, score); }
     else if (S.a >= SET.maxAttempts) S.q = 2;
     pushStatus(); save(true);
@@ -632,6 +727,7 @@
     // Khóa chỉ có bài kiểm tra (không video): không có nút Xem lại video
     if (!passed && left > 0) h += '<div class="next-row">' + (VIDEOS.length ? '<button class="btn" id="rewatch">Xem lại video</button>' : "") +
       '<button class="btn primary" id="retry">Làm lại</button></div>';
+    $("main").classList.remove("noselect");
     $("main").innerHTML = h;
     window.scrollTo(0, 0);
     if ($("retry")) $("retry").onclick = function () { renderQuiz(); };
@@ -653,6 +749,11 @@
   }
   window.addEventListener("pagehide", finish);
   window.addEventListener("beforeunload", finish);
+
+  // Đang làm bài: không bôi đen, không copy, không chuột phải (chỉ làm khó, không chặn được chụp màn hình)
+  ["copy", "cut", "contextmenu"].forEach(function (ev) {
+    $("main").addEventListener(ev, function (e) { if ($("main").classList.contains("noselect")) e.preventDefault(); });
+  });
 
   // ---------------------------------------------------------------- khởi động
   renderShell();
