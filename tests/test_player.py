@@ -420,6 +420,62 @@ with sync_playwright() as p:
     check("Chỉ bài kiểm tra: mở lại thấy kết quả đã đạt", "Bạn đã ĐẠT" in qf.inner_text(".main"))
     qctx.close()
 
+    # ---- I. Bài dài (30 câu, 10 phút): dãy ô số thu gọn; lưu bài làm dở, mở lại làm tiếp; hết giờ khi rời đi; rời sang video thì mất lượt
+    def long_quiz(c):
+        base = c["quiz"]
+        c["quiz"] = [dict(base[i % len(base)], q=base[i % len(base)]["q"] + " (câu %d)" % (i + 1)) for i in range(30)]
+        c["settings"]["questionsPerAttempt"] = 30
+        c["settings"]["timeLimitMinutes"] = 10
+    lctx, lp = variant("course-long", long_quiz)
+    lf = lp.frames[1]
+    lstore = lambda: lp.evaluate("lmsStore()")
+    sd = lambda: json.loads(lstore()["cmi.suspend_data"])
+    skip_videos(lf); time.sleep(0.3)
+    lf.click("#startQuiz"); time.sleep(0.3)
+    check("Bài dài: dãy ô số thu gọn, dòng đầu ghi Câu 1/30 · Đã trả lời 0/30",
+          not lf.is_visible("#qMap") and lf.is_visible("#qMapBtn") and lf.inner_text("#qPos") == "Câu 1/30 · Đã trả lời 0/30", lf.inner_text("#qPos"))
+    lf.click("#qMapBtn")
+    check("Bài dài: bấm Danh sách câu thì mở dãy 30 ô số", lf.is_visible("#qMap") and lf.evaluate("document.querySelectorAll('#qMap button').length") == 30)
+    lf.click("#qMapBtn")
+    check("Bài dài: dòng nhắc ngắn gọn khi còn nhiều câu", "Còn 30 câu chưa trả lời." in lf.inner_text("#qLeft"), lf.inner_text("#qLeft"))
+    lf.click("#q0 label:nth-of-type(2)")
+    lf.click("#qNext"); lf.click("#q1 label:nth-of-type(1)")
+    lf.click("#qNext"); lf.click("#qNext")      # đang ở câu 4, câu 3 chưa làm
+    lf.click("#qTodo")
+    check("Bài dài: Tới câu chưa làm -> nhảy tới câu chưa làm đầu tiên (câu 3)", lf.inner_text("#qPos").startswith("Câu 3/30"), lf.inner_text("#qPos"))
+    w = sd().get("w") or {}
+    check("Lưu bài dở: đáp án lưu ngay sau mỗi câu", w.get("k", "")[:3] == "10-" and sd()["a"] == 1, w)
+    texts = lf.evaluate("[0,1].map(i => document.querySelector('#q' + i + ' p').textContent)")
+    lp.reload(); time.sleep(1.5); lf = lp.frames[1]
+    check("Lưu bài dở: mở lại vào thẳng bài đang làm, đúng câu đang xem, vẫn lượt 1",
+          lf.evaluate("!!document.getElementById('q0')") and lf.inner_text("#qPos").startswith("Câu 3/30") and sd()["a"] == 1 and "Đang làm tiếp lượt 1/3" in lf.inner_text("#toast"),
+          (lf.inner_text("#qPos"), lf.inner_text("#toast")))
+    check("Lưu bài dở: cùng đề, giữ đáp án đã chọn",
+          lf.evaluate("[0,1].map(i => document.querySelector('#q' + i + ' p').textContent)") == texts
+          and lf.evaluate("[0,1].map(i => (document.querySelector('#q' + i + ' input:checked') || {}).value)") == ["1", "0"]
+          and "Đã trả lời 2/30" in lf.inner_text("#qPos"))
+    t = lf.evaluate("document.getElementById('clock').textContent")
+    check("Lưu bài dở: đồng hồ chạy tiếp, không đếm lại từ đầu", t != "10:00" and t.startswith("9:"), t)
+    # hết giờ trong lúc rời đi: mở lại thì tự nộp với các câu đã làm
+    lf.evaluate("() => { window.__ctd.S.w.d = Date.now() - 1000; }")
+    lf.click("#q2 label:nth-of-type(1)")            # chọn đáp án -> lưu (kèm hạn nộp đã qua)
+    lp.reload(); time.sleep(1.5); lf = lp.frames[1]
+    check("Hết giờ trong lúc rời đi: mở lại thì bài tự nộp, tính lượt 1",
+          "Kết quả bài kiểm tra" in lf.inner_text(".main h2") and "CHƯA ĐẠT" in lf.inner_text(".main") and sd()["a"] == 1 and "w" not in sd()
+          and lstore()["cmi.core.lesson_status"] == "incomplete", lf.inner_text(".main")[:80])
+    # rời bài thi sang video trong khóa: mất lượt
+    lf.click("#retry"); lf.click("#startQuiz"); time.sleep(0.2)
+    lf.click("#q0 label:nth-of-type(1)")
+    lf.click("#tocList li:first-child button"); time.sleep(0.3)
+    check("Rời bài thi sang video: mất lượt 2, không còn bài dở", sd()["a"] == 2 and "w" not in sd() and lf.evaluate("!!document.getElementById('vid')"))
+    lf.click("#tocList li.quiz button"); time.sleep(0.2)
+    check("Rời bài thi sang video: quay lại thì bắt đầu lượt 3", "lượt 3/3" in lf.inner_text("#startQuiz"), lf.inner_text("#startQuiz"))
+    lf.click("#startQuiz"); time.sleep(0.2)
+    lf.evaluate(ANSWER_JS, True); lf.click("#submitQuiz"); time.sleep(0.3)
+    check("Bài dài: trả lời đúng hết -> passed", lstore()["cmi.core.lesson_status"] == "passed" and "w" not in sd())
+    lp.screenshot(path=SHOTS + "shot_quiz_long_pass.png")
+    lctx.close()
+
     check("Không có lỗi JavaScript", not errors, errors[:3])
     b.close()
 

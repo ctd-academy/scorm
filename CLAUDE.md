@@ -8,7 +8,7 @@ Coteccons (tập đoàn xây dựng, ~4.000 nhân viên) chuyển ~150 khóa e-l
 
 | Phần | Trạng thái | Vai trò |
 |---|---|---|
-| `player/` | ✅ Xong, 87/87 test đạt (có tài liệu PDF, chương, khóa Tham khảo, khóa chỉ video, khóa chỉ bài thi) | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
+| `player/` | ✅ Xong, 99/99 test đạt (có tài liệu PDF, chương, khóa Tham khảo, khóa chỉ video, khóa chỉ bài thi) | "Khung học" nằm trong mọi gói SCORM. Viết một lần, dùng cho cả 150 khóa |
 | `builder/` | ✅ **M1–M3.3 xong, đang chạy trên web** (kiểm tra lỗi, đặt pop-up và chương, xem thử, xuất zip SCORM). 🟡 M4: trang hướng dẫn trainer đã lên web (`builder/huong-dan.html`), còn trainer đọc thử + thử Edge | Website tĩnh để trainer tự đóng gói khóa học thành zip SCORM, không cần chạy lệnh |
 
 **Tình trạng (05/11/2026):** chưa dùng thật. Việc đang chờ: thử Edge · thử khóa Tham khảo trên SCORM Cloud/Workday sandbox · trainer đọc thử hướng dẫn · pilot 3 khóa trên Workday sandbox rồi bổ sung các bước Workday vào hướng dẫn. Chi tiết: `docs/HANDOFF.md` mục 11.
@@ -31,7 +31,7 @@ Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&O
 3. **Excel là nơi nhập liệu chính** (template chuẩn, trống: `templates/Mau_nhap_lieu_khoa_hoc.xlsx`; khóa demo: `demo-course/ATLD-DEMO.xlsx`; cả hai do `tools/make_template.py` tạo). Builder không thay Excel bằng form.
 4. **Player là nguồn chuẩn.** Builder nhúng nguyên `player/` vào gói, không viết lại luật chơi. Sửa luật chơi = sửa `player/` + chạy lại test.
 5. **Một động cơ đóng gói** (28/10/2026): `builder/src/` (`xlsx.js`, `course.js`, `package.js`, `zip.js`) dùng chung cho website và lệnh `builder/scripts/build-scorm.mjs`. Đã bỏ bản Python `tools/build_scorm.py`; gói khóa demo so với gói mẫu `builder/tests/golden/ATLD-DEMO.json`.
-6. Luật chơi Player: học tuần tự · chỉ tua lại phần đã xem · tối đa 2x · chuyển tab thì dừng · pop-up không tính điểm, sai thì chọn lại tới khi đúng (không phải xem lại video), đúng thì lưu ngay · bài thi tùy chỉnh theo khóa, làm từng câu, chỉ nộp khi đã trả lời hết · hết lượt thì báo `failed`, khóa bài thi, hiện liên hệ L&OD · chứng nhận do Workday cấp · tài liệu PDF theo từng video (không bắt buộc): xem song song khi video chạy, không có nút tải/in, ẩn khi làm bài thi, không in tên học viên · chương theo từng video (không bắt buộc): bấm để nhảy tới, khóa Bắt buộc chỉ bấm được chương đã xem tới.
+6. Luật chơi Player: học tuần tự · chỉ tua lại phần đã xem · tối đa 2x · chuyển tab thì dừng · pop-up không tính điểm, sai thì chọn lại tới khi đúng (không phải xem lại video), đúng thì lưu ngay · bài thi tùy chỉnh theo khóa, làm từng câu, chỉ nộp khi đã trả lời hết, lưu bài làm dở (đóng cửa sổ thì mở lại làm tiếp lượt đó; rời sang video thì mất lượt) · hết lượt thì báo `failed`, khóa bài thi, hiện liên hệ L&OD · chứng nhận do Workday cấp · tài liệu PDF theo từng video (không bắt buộc): xem song song khi video chạy, không có nút tải/in, ẩn khi làm bài thi, không in tên học viên · chương theo từng video (không bắt buộc): bấm để nhảy tới, khóa Bắt buộc chỉ bấm được chương đã xem tới.
    **Hai loại khóa** (05/11/2026, dòng "Loại khóa"): luật trên là khóa **Bắt buộc** (mặc định). Khóa **Tham khảo** (tài liệu hướng dẫn): mở bài nào cũng được, tua tự do, chuyển tab không dừng, không pop-up, không bài thi, mở khóa là `completed`; vẫn tối đa 2x, PDF vẫn không tải/in.
 7. **Host:** repo `ctd-academy/scorm` (tài khoản team) và host trên **GitHub Pages** (https://ctd-academy.github.io/scorm/).
 8. **Không dùng Lovable** cho phần lõi (đóng gói, Player). Có thể dùng để phác giao diện.
@@ -46,4 +46,4 @@ Chủ dự án: **Alex** (L&OD Team Lead). Người dùng Builder: 4 trainer L&O
 
 ## Định nghĩa "xong" cho mỗi thay đổi
 
-Xem `docs/DEV.md` mục 9. Tóm tắt: `bash tests/run_all.sh` đạt hết (25 test logic, 87 test Player, 99 test giao diện); gói khóa demo khớp gói mẫu; thử trên Chrome và Edge.
+Xem `docs/DEV.md` mục 9. Tóm tắt: `bash tests/run_all.sh` đạt hết (25 test logic, 99 test Player, 99 test giao diện); gói khóa demo khớp gói mẫu; thử trên Chrome và Edge.
