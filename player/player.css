@@ -117,6 +117,16 @@ body.ref .hdr .pct, body.ref .bar { display: none; }
 .qitem input { margin-top: 4px; accent-color: var(--navy); }
 .qitem.r { border-color: var(--ok); } .qitem.w { border-color: var(--bad); }
 .qitem .ans { font-size: 13.5px; margin-top: 8px; padding: 8px 10px; background: var(--bg); border-radius: 6px; }
+.qmap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.qmap button { min-width: 36px; height: 36px; padding: 0 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--gray2); font: inherit; font-size: 14px; cursor: pointer; }
+.qmap button.done { background: var(--teal-soft); border-color: var(--teal); color: var(--navy); font-weight: 600; }
+.qmap button.cur { border: 2px solid var(--navy); color: var(--navy); font-weight: 700; }
+.qpos { font-size: 13px; color: var(--gray2); margin-bottom: 8px; }
+.qnav { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.qnav .btn:disabled { visibility: hidden; }
+.qsubmit { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); margin-top: 16px; padding-top: 14px; font-size: 13.5px; color: var(--gray2); }
+.qsubmit .btn:disabled { opacity: .45; cursor: not-allowed; }
+.noselect { -webkit-user-select: none; user-select: none; }
 .result { text-align: center; padding: 18px 0 8px; }
 .result .big { font-size: 48px; font-weight: 700; }
 .result .big.ok { color: var(--ok); } .result .big.no { color: var(--bad); }

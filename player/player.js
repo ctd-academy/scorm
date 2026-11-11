@@ -8,7 +8,8 @@
    - Pop-up: không tính điểm; trả lời sai -> chọn lại tới khi đúng (không phải xem
      lại video); trả lời đúng -> lưu ngay
    - Bài thi cuối: tùy chỉnh theo khóa (số câu, thời gian, hiện đáp án,
-     điểm đạt, số lượt); hết lượt -> khóa bài thi, liên hệ L&OD
+     điểm đạt, số lượt); hết lượt -> khóa bài thi, liên hệ L&OD. Làm từng câu,
+     đi lại tự do, chỉ nộp khi đã trả lời hết (hết giờ thì tự nộp)
    - Tài liệu PDF theo từng video (không bắt buộc): xem song song khi video
      đang chạy, không có nút tải/in, ẩn khi làm bài thi
    - Chương (không bắt buộc): danh sách dưới video, bấm để nhảy tới đoạn đó;
@@ -176,6 +177,7 @@
     if (vid) { if (typeof view === "number") S.v[view][1] = vid.currentTime; vid.pause(); vid.removeAttribute("src"); vid.load(); vid = null; }
     closeDocView();
     document.querySelector(".layout").classList.remove("doc-open");
+    $("main").classList.remove("noselect");
     view = target;
     save(true);
     renderToc();
@@ -561,22 +563,52 @@
       return { q: q.q, options: order.map(function (i) { return q.options[i]; }), answer: order.indexOf(q.answer), explain: q.explain };
     });
 
+    // Mỗi màn 1 câu: các câu đều nằm trong trang, chỉ hiện câu đang làm (cur).
+    // Chỉ nộp được khi đã trả lời hết; hết giờ thì tự nộp (câu bỏ trống tính sai).
+    var cur = 0;
     var h = '<h2>Bài kiểm tra cuối khóa</h2><div class="timer"><span>Lượt ' + S.a + "/" + SET.maxAttempts + " · " + N_Q + ' câu</span>' +
-      (SET.timeLimitMinutes ? '<span>Còn lại: <b id="clock"></b></span>' : '<span id="answered">Đã trả lời: 0/' + N_Q + "</span>") + "</div>";
+      (SET.timeLimitMinutes ? '<span>Còn lại: <b id="clock"></b></span>' : '<span id="answered"></span>') + "</div>";
+    h += '<div class="qmap" id="qMap">';
+    picked.forEach(function (_, qi) { h += '<button type="button" data-q="' + qi + '" aria-label="Câu ' + (qi + 1) + '">' + (qi + 1) + "</button>"; });
+    h += '</div><div class="qpos" id="qPos"></div>';
     picked.forEach(function (q, qi) {
-      h += '<div class="qitem" id="q' + qi + '"><p>' + (qi + 1) + ". " + esc(q.q) + "</p>";
+      h += '<div class="qitem" id="q' + qi + '"' + (qi ? " hidden" : "") + "><p>" + (qi + 1) + ". " + esc(q.q) + "</p>";
       q.options.forEach(function (o, oi) {
         h += '<label><input type="radio" name="q' + qi + '" value="' + oi + '"><span>' + String.fromCharCode(65 + oi) + ". " + esc(o) + "</span></label>";
       });
       h += "</div>";
     });
-    h += '<div class="next-row"><button class="btn primary" id="submitQuiz">Nộp bài</button></div>';
+    h += '<div class="qnav"><button class="btn" id="qPrev">← Câu trước</button><button class="btn" id="qNext">Câu sau →</button></div>' +
+      '<div class="qsubmit"><span id="qLeft"></span><button class="btn primary" id="submitQuiz" disabled>Nộp bài</button></div>';
     $("main").innerHTML = h;
+    $("main").classList.add("noselect");
 
-    $("main").onchange = (function () {
-      var a = $("answered"); if (a) a.textContent = "Đã trả lời: " + countAnswered() + "/" + N_Q;
+    function isAnswered(qi) { return !!$("main").querySelector("input[name=q" + qi + "]:checked"); }
+    function show(qi) {
+      cur = qi;
+      picked.forEach(function (_, k) { $("q" + k).hidden = k !== qi; });
+      refresh();
+    }
+    function refresh() {
+      var left = [];
+      picked.forEach(function (_, k) { if (!isAnswered(k)) left.push(k + 1); });
+      Array.prototype.forEach.call($("qMap").children, function (b, k) {
+        b.className = (isAnswered(k) ? "done " : "") + (k === cur ? "cur" : "");
+      });
+      $("qPos").textContent = "Câu " + (cur + 1) + "/" + N_Q;
+      $("qPrev").disabled = cur === 0;
+      $("qNext").disabled = cur === N_Q - 1;
+      var a = $("answered"); if (a) a.textContent = "Đã trả lời: " + (N_Q - left.length) + "/" + N_Q;
+      $("submitQuiz").disabled = left.length > 0;
+      $("qLeft").textContent = left.length ? "Trả lời hết các câu để nộp bài. Còn " + left.length + " câu: " + left.join(", ") : "Bạn đã trả lời hết " + N_Q + " câu.";
+    }
+    $("main").onchange = refresh;
+    $("qPrev").onclick = function () { if (cur > 0) show(cur - 1); };
+    $("qNext").onclick = function () { if (cur < N_Q - 1) show(cur + 1); };
+    Array.prototype.forEach.call($("qMap").children, function (b) {
+      b.onclick = function () { show(parseInt(b.getAttribute("data-q"), 10)); };
     });
-    function countAnswered() { return $("main").querySelectorAll("input:checked").length; }
+    show(0);
 
     if (SET.timeLimitMinutes) {
       var deadline = Date.now() + SET.timeLimitMinutes * 60000;
@@ -590,8 +622,7 @@
     } else { quizTimer = true; }
 
     $("submitQuiz").onclick = function () {
-      var n = countAnswered();
-      if (n < N_Q && !confirm("Bạn còn " + (N_Q - n) + " câu chưa trả lời. Vẫn nộp bài?")) return;
+      if ($("submitQuiz").disabled) return;
       stopTimer(); grade(picked);
     };
   }
@@ -632,6 +663,7 @@
     // Khóa chỉ có bài kiểm tra (không video): không có nút Xem lại video
     if (!passed && left > 0) h += '<div class="next-row">' + (VIDEOS.length ? '<button class="btn" id="rewatch">Xem lại video</button>' : "") +
       '<button class="btn primary" id="retry">Làm lại</button></div>';
+    $("main").classList.remove("noselect");
     $("main").innerHTML = h;
     window.scrollTo(0, 0);
     if ($("retry")) $("retry").onclick = function () { renderQuiz(); };
@@ -653,6 +685,11 @@
   }
   window.addEventListener("pagehide", finish);
   window.addEventListener("beforeunload", finish);
+
+  // Đang làm bài: không bôi đen, không copy, không chuột phải (chỉ làm khó, không chặn được chụp màn hình)
+  ["copy", "cut", "contextmenu"].forEach(function (ev) {
+    $("main").addEventListener(ev, function (e) { if ($("main").classList.contains("noselect")) e.preventDefault(); });
+  });
 
   // ---------------------------------------------------------------- khởi động
   renderShell();

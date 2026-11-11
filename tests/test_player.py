@@ -152,7 +152,35 @@ with sync_playwright() as p:
     f.click("#startQuiz"); time.sleep(0.4)
     check("Rút đúng 5 câu", f.evaluate("document.querySelectorAll('.qitem').length") == 5)
     check("Có đồng hồ đếm ngược", f.evaluate("!!document.getElementById('clock')"))
-    f.evaluate(ANSWER_JS, False); f.click("#submitQuiz"); time.sleep(0.4)
+    shown = "Array.from(document.querySelectorAll('.qitem')).filter(x => !x.hidden).map(x => x.id)"
+    check("Từng câu: chỉ hiện câu 1, ghi Câu 1/5, dãy 5 ô số, chưa có nút Câu trước",
+          f.evaluate(shown) == ["q0"] and f.inner_text("#qPos") == "Câu 1/5" and f.evaluate("document.querySelectorAll('#qMap button').length") == 5
+          and not f.is_visible("#qPrev") and f.is_visible("#qNext"), (f.evaluate(shown), f.inner_text("#qPos")))
+    check("Từng câu: chưa trả lời hết thì không nộp được",
+          f.evaluate("document.getElementById('submitQuiz').disabled") and "Còn 5 câu: 1, 2, 3, 4, 5" in f.inner_text("#qLeft"), f.inner_text("#qLeft"))
+    f.click("#q0 label:nth-of-type(2)")
+    check("Từng câu: chọn đáp án thì ô số 1 đổi màu, không tự sang câu khác",
+          f.evaluate("document.querySelector('#qMap button').classList.contains('done')") and f.evaluate(shown) == ["q0"])
+    f.click("#qNext")
+    check("Từng câu: Câu sau -> câu 2, có nút Câu trước", f.evaluate(shown) == ["q1"] and f.inner_text("#qPos") == "Câu 2/5" and f.is_visible("#qPrev"))
+    f.click("#qMap button[data-q='4']")
+    check("Từng câu: bấm ô số 5 -> nhảy tới câu 5, câu cuối không có nút Câu sau", f.evaluate(shown) == ["q4"] and not f.is_visible("#qNext"))
+    f.click("#qPrev")
+    check("Từng câu: Câu trước -> câu 4", f.evaluate(shown) == ["q3"])
+    f.click("#submitQuiz", force=True); time.sleep(0.3)
+    check("Từng câu: bấm Nộp bài khi chưa xong thì không nộp", f.evaluate("!!document.getElementById('q0')") and json.loads(store()["cmi.suspend_data"])["s"] == -1)
+    check("Từng câu: đang làm bài không bôi đen/copy được",
+          f.evaluate("document.getElementById('main').classList.contains('noselect')")
+          and not f.evaluate("document.getElementById('main').dispatchEvent(new Event('copy', {cancelable: true}))"))
+    page.screenshot(path=SHOTS + "shot_quiz_one.png")
+    f.click("#qMap button[data-q='0']")
+    f.click("#q0 label:nth-of-type(1)")
+    check("Từng câu: quay lại đổi đáp án được", f.evaluate("document.querySelector('#q0 input:checked').value") == "0")
+    f.evaluate(ANSWER_JS, False)
+    check("Từng câu: trả lời hết thì nút Nộp bài bấm được",
+          not f.evaluate("document.getElementById('submitQuiz').disabled") and "đã trả lời hết 5 câu" in f.inner_text("#qLeft"), f.inner_text("#qLeft"))
+    f.click("#submitQuiz"); time.sleep(0.4)
+    check("Kết quả: hết khóa bôi đen", not f.evaluate("document.getElementById('main').classList.contains('noselect')"))
     st = store()
     check("Rớt lượt 1: status vẫn incomplete, còn 2 lượt", st["cmi.core.lesson_status"] == "incomplete" and json.loads(st["cmi.suspend_data"])["a"] == 1)
     check("Hiện đáp án khi xem lại (đã bật)", f.evaluate("document.querySelectorAll('.qitem .ans').length") == 5)
@@ -246,6 +274,11 @@ with sync_playwright() as p:
     check("Mobile: tài liệu nằm dưới video", db["y"] >= vb["y"] + vb["height"], (vb, db))
     check("Mobile: mở tài liệu không tràn ngang", mp.evaluate("document.documentElement.scrollWidth <= window.innerWidth"))
     mp.screenshot(path=SHOTS + "shot_doc_mobile.png")
+    skip_videos(mp); time.sleep(0.3)
+    mp.click("#startQuiz"); time.sleep(0.3)
+    check("Mobile: bài kiểm tra từng câu không tràn ngang, nút Câu sau nằm trong màn hình",
+          mp.evaluate("document.documentElement.scrollWidth <= window.innerWidth") and mp.locator("#qNext").bounding_box()["x"] + mp.locator("#qNext").bounding_box()["width"] <= 390)
+    mp.screenshot(path=SHOTS + "shot_quiz_mobile.png", full_page=True)
 
     # ---- F. Khóa Tham khảo: cùng gói demo, chỉ đổi settings.reference (pop-up, bài thi vẫn có trong course.js: Player phải bỏ qua)
     ref_dir = os.path.join(SHOTS, "course-ref")
