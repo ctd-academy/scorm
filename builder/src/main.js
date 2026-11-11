@@ -229,7 +229,7 @@ function render({ course, errors, warnings, files, totalSize }, folder) {
   const exam = S.reference
     ? "Khóa Tham khảo: mở bài nào cũng được, tua tự do, không có pop-up và bài kiểm tra. Học viên mở khóa là hoàn thành"
     : course.quiz.length
-    ? [`Đạt từ ${S.passScore}%`, `${S.maxAttempts} lượt`,
+    ? (course.videos.length ? "" : "Khóa chỉ có bài kiểm tra, không có video · ") + [`Đạt từ ${S.passScore}%`, `${S.maxAttempts} lượt`,
        S.questionsPerAttempt ? `${S.questionsPerAttempt} câu mỗi lần (rút từ ${course.quiz.length})` : `cả ${course.quiz.length} câu mỗi lần`,
        S.timeLimitMinutes ? `${S.timeLimitMinutes} phút` : "không giới hạn thời gian",
        S.showAnswers ? "hiện đáp án sau khi nộp" : "không hiện đáp án"].join(" · ")

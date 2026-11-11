@@ -1,4 +1,5 @@
-"""Test tự động cho Player v1 (Playwright + Chromium): luật học, bài thi, điện thoại, tài liệu PDF, chương, khóa Tham khảo.
+"""Test tự động cho Player v1 (Playwright + Chromium): luật học, bài thi, điện thoại, tài liệu PDF, chương, khóa Tham khảo,
+khóa chỉ có video, khóa chỉ có bài kiểm tra.
 
 Cách nhanh nhất: bash tests/run_all.sh (tự làm các bước dưới và chạy mọi test).
 
@@ -301,6 +302,90 @@ with sync_playwright() as p:
     check("Tham khảo: kết thúc phiên vẫn completed, exit = suspend (lần sau mở lại đúng chỗ)",
           st["cmi.core.lesson_status"] == "completed" and st.get("cmi.core.exit") == "suspend", (st["cmi.core.lesson_status"], st.get("cmi.core.exit")))
     rctx.close()
+
+    # ---- G. Khóa chỉ có video (không câu hỏi, không tài liệu): xem hết video là completed
+    def variant(name, change):
+        """Chép gói demo sang out/test/<name>, sửa course.js bằng change(course), mở trong ngữ cảnh mới."""
+        d = os.path.join(SHOTS, name)
+        shutil.rmtree(d, ignore_errors=True)
+        shutil.copytree(os.path.join(SHOTS, "course"), d)
+        with open(os.path.join(d, "course.js"), encoding="utf-8") as fh:
+            js = fh.read()
+        c = json.loads(js[js.index("=") + 1:].strip().rstrip(";"))
+        change(c)
+        with open(os.path.join(d, "course.js"), "w", encoding="utf-8") as fh:
+            fh.write("window.COURSE = " + json.dumps(c, ensure_ascii=False) + ";\n")
+        cx = b.new_context(viewport={"width": 1300, "height": 920})
+        pg = cx.new_page()
+        pg.on("dialog", lambda dl: dl.accept())
+        pg.on("pageerror", lambda e: errors.append(str(e)))
+        pg.goto(URL + "?course=" + name); time.sleep(1.5)
+        return cx, pg
+
+    def video_only(c):
+        c["popups"], c["quiz"] = [], []
+        for v in c["videos"]:
+            v.pop("docs", None)
+    vctx, vp = variant("course-video-only", video_only)
+    vf = vp.frames[1]
+    vstore = lambda: vp.evaluate("lmsStore()")
+    check("Chỉ video: ban đầu incomplete, mục lục 3 bài, không có bài kiểm tra",
+          vstore()["cmi.core.lesson_status"] == "incomplete" and vf.evaluate("document.querySelectorAll('#tocList li').length") == 3
+          and vf.evaluate("!document.querySelector('#tocList li.quiz')") and "0/3 phần" in vf.inner_text("#tocLabel"), vf.inner_text("#tocLabel"))
+    check("Chỉ video: bài 2 vẫn khóa (học tuần tự)", vf.evaluate("document.querySelectorAll('#tocList li')[1].classList.contains('locked')"))
+    check("Chỉ video: không có nút tài liệu", vf.evaluate("!document.getElementById('docBtn')"))
+    vf.evaluate("() => { const S = window.__ctd.S; S.v[0][2] = 1; S.v[1][2] = 1; window.__ctd.go(2); }")
+    check("Chỉ video: bài cuối có nút Hoàn thành, chưa bấm được khi chưa xem hết",
+          vf.inner_text("#nextBtn").strip() == "Hoàn thành" and vf.evaluate("document.getElementById('nextBtn').disabled"), vf.inner_text("#nextBtn"))
+    check("Chỉ video: xem chưa hết thì vẫn incomplete", vstore()["cmi.core.lesson_status"] == "incomplete")
+    vf.wait_for_function("document.getElementById('vid').readyState >= 1", timeout=10000)
+    vf.evaluate("document.getElementById('vid').dispatchEvent(new Event('ended'))")
+    time.sleep(0.3)
+    check("Chỉ video: xem hết video cuối -> completed, báo hoàn thành khóa",
+          vstore()["cmi.core.lesson_status"] == "completed" and "hoàn thành khóa học" in vf.inner_text("#toast")
+          and vf.inner_text("#pctNum") == "100%", (vstore()["cmi.core.lesson_status"], vf.inner_text("#toast"), vf.inner_text("#pctNum")))
+    vf.click("#nextBtn")
+    time.sleep(0.3)
+    check("Chỉ video: bấm Hoàn thành hiện màn hoàn thành khóa", "hoàn thành" in vf.inner_text(".main").lower(), vf.inner_text(".main")[:120])
+    vp.screenshot(path=SHOTS + "shot_video_only.png")
+    vp.evaluate("document.getElementById('f').contentWindow.dispatchEvent(new Event('pagehide'))"); time.sleep(0.3)
+    st = vstore()
+    check("Chỉ video: kết thúc phiên vẫn completed, exit rỗng (đã xong khóa)",
+          st["cmi.core.lesson_status"] == "completed" and st.get("cmi.core.exit") == "", (st["cmi.core.lesson_status"], st.get("cmi.core.exit")))
+    vctx.close()
+
+    # ---- H. Khóa chỉ có bài kiểm tra (không video): vào thẳng bài kiểm tra, đạt là passed
+    def quiz_only(c):
+        c["videos"], c["popups"] = [], []
+    qctx, qp = variant("course-quiz-only", quiz_only)
+    qf = qp.frames[1]
+    qstore = lambda: qp.evaluate("lmsStore()")
+    check("Chỉ bài kiểm tra: mở là vào thẳng bài kiểm tra, không bị khóa",
+          "Bài kiểm tra cuối khóa" in qf.inner_text(".main h2") and qf.is_visible("#startQuiz")
+          and qf.evaluate("document.querySelectorAll('#tocList li').length") == 1
+          and qf.evaluate("!document.querySelector('#tocList li.locked') && !!document.querySelector('#tocList li.quiz.active')"))
+    check("Chỉ bài kiểm tra: ban đầu incomplete, tiến độ 0/1 phần, không có video",
+          qstore()["cmi.core.lesson_status"] == "incomplete" and "0/1 phần" in qf.inner_text("#tocLabel")
+          and qf.evaluate("!document.getElementById('vid')"), qf.inner_text("#tocLabel"))
+    qf.click("#startQuiz")
+    qf.evaluate(ANSWER_JS, False)
+    qf.click("#submitQuiz")
+    time.sleep(0.3)
+    check("Chỉ bài kiểm tra: trượt thì có nút Làm lại, không có nút Xem lại video",
+          "CHƯA ĐẠT" in qf.inner_text(".main") and qf.is_visible("#retry") and qf.evaluate("!document.getElementById('rewatch')"))
+    qp.screenshot(path=SHOTS + "shot_quiz_only_fail.png")
+    qf.click("#retry")
+    qf.click("#startQuiz")
+    qf.evaluate(ANSWER_JS, True)
+    qf.click("#submitQuiz")
+    time.sleep(0.3)
+    st = qstore()
+    check("Chỉ bài kiểm tra: đạt -> passed, điểm 100, tiến độ 100%",
+          st["cmi.core.lesson_status"] == "passed" and str(st.get("cmi.core.score.raw")) == "100" and qf.inner_text("#pctNum") == "100%",
+          (st["cmi.core.lesson_status"], st.get("cmi.core.score.raw"), qf.inner_text("#pctNum")))
+    qp.reload(); time.sleep(1.5); qf = qp.frames[1]
+    check("Chỉ bài kiểm tra: mở lại thấy kết quả đã đạt", "Bạn đã ĐẠT" in qf.inner_text(".main"))
+    qctx.close()
 
     check("Không có lỗi JavaScript", not errors, errors[:3])
     b.close()

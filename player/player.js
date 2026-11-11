@@ -16,6 +16,8 @@
    Khóa "Tham khảo" (settings.reference, cho tài liệu hướng dẫn): mở bài nào cũng được,
    tua tự do, chuyển tab không dừng video, không pop-up, không bài thi, mở khóa là
    báo "completed". Vẫn tối đa 2x, tài liệu PDF vẫn không tải/in được.
+   Khóa không có câu CUOI KHOA: xem hết video là "completed". Khóa không có video
+   (chỉ có bài kiểm tra): mở thẳng bài kiểm tra, đạt "passed", hết lượt "failed".
    ============================================================ */
 (function () {
   "use strict";
@@ -627,7 +629,9 @@
           "<br>Đáp án đúng: <b>" + esc(q.options[q.answer]) + "</b>" + (q.explain ? "<br>" + esc(q.explain) : "") + "</div></div>";
       });
     }
-    if (!passed && left > 0) h += '<div class="next-row"><button class="btn" id="rewatch">Xem lại video</button><button class="btn primary" id="retry">Làm lại</button></div>';
+    // Khóa chỉ có bài kiểm tra (không video): không có nút Xem lại video
+    if (!passed && left > 0) h += '<div class="next-row">' + (VIDEOS.length ? '<button class="btn" id="rewatch">Xem lại video</button>' : "") +
+      '<button class="btn primary" id="retry">Làm lại</button></div>';
     $("main").innerHTML = h;
     window.scrollTo(0, 0);
     if ($("retry")) $("retry").onclick = function () { renderQuiz(); };

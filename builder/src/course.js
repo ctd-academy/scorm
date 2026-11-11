@@ -233,11 +233,7 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
     videos.push({ title: cell(row[2]) || `Bài ${videos.length + 1}`, file: fname, src, docs });
     videoRows.push(r);
   }
-  if (!videos.length && !errors.some((e) => e.includes(SHEETS.video)))
-    errors.push(`Sheet ${SHEETS.video}: chưa có video nào. Nhập dữ liệu từ dòng 3`);
-  const unused = allVideos.filter((f) => !used.has(f));
-  if (videos.length && unused.length)
-    warnings.push(`Thư mục có ${unused.length} video không dùng trong Excel: ${unused.slice(0, 5).map((f) => `'${f.path}'`).join(", ")}${unused.length > 5 ? "…" : ""}`);
+  const videoErrors = errors.some((e) => e.includes(SHEETS.video));
 
   const duration = (v) => (durations && v.src ? Math.round(durations.get(v.src.path) || 0) : 0);
 
@@ -268,6 +264,10 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
     if (kind === "POPUP") {
       const vno = Math.trunc(Number(cell(row[2])));
       const t = parseTime(row[3]);
+      if (!videos.length && !videoErrors) {
+        errors.push(at(SHEETS.question, r, "khóa không có video nên không có pop-up. Đổi loại thành CUOI KHOA hoặc xóa dòng này"));
+        continue;
+      }
       if (!(vno >= 1 && vno <= videos.length)) {
         errors.push(at(SHEETS.question, r, `'Video số' phải từ 1 đến ${videos.length}, đang là '${cell(row[2])}'`));
         continue;
@@ -287,6 +287,21 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
       quiz.push(q);
     } else {
       errors.push(at(SHEETS.question, r, `loại '${cell(row[1])}' phải là POPUP hoặc CUOI KHOA`));
+    }
+  }
+
+  // Khóa cần ít nhất 1 video, hoặc (khóa Bắt buộc) 1 câu CUOI KHOA: khóa chỉ có bài kiểm tra
+  const unused = allVideos.filter((f) => !used.has(f));
+  const unusedMsg = `Thư mục có ${unused.length} video không dùng trong Excel: ${unused.slice(0, 5).map((f) => `'${f.path}'`).join(", ")}${unused.length > 5 ? "…" : ""}`;
+  if (videos.length) {
+    if (unused.length) warnings.push(unusedMsg);
+  } else if (!videoErrors) {
+    if (settings.reference) errors.push(`Sheet ${SHEETS.video}: chưa có video nào. Nhập dữ liệu từ dòng 3`);
+    else if (!quiz.length)
+      errors.push(`Khóa chưa có nội dung: sheet ${SHEETS.video} chưa có video nào (nhập từ dòng 3). Nếu khóa chỉ có bài kiểm tra, nhập câu hỏi loại CUOI KHOA ở sheet ${SHEETS.question}`);
+    else {
+      warnings.push(`Sheet ${SHEETS.video} trống: khóa chỉ có bài kiểm tra, học viên vào thẳng bài kiểm tra`);
+      if (unused.length) warnings.push(unusedMsg);
     }
   }
 
@@ -313,6 +328,10 @@ export function readCourse(sheets, folder, durations = null, logoFile = null) {
     if (title.startsWith("(Ví dụ)")) continue;
     const vno = Math.trunc(Number(vRaw));
     const t = parseTime(row[2]);
+    if (!videos.length && !videoErrors) {
+      errors.push(at(CHAPTER_SHEET, r, "khóa không có video nên không có chương. Xóa dòng này"));
+      continue;
+    }
     if (!(vno >= 1 && vno <= videos.length && String(vno) === vRaw)) {
       errors.push(at(CHAPTER_SHEET, r, `'Video số' phải từ 1 đến ${videos.length}, đang là '${vRaw}'`));
       continue;

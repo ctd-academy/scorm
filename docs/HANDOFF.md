@@ -90,6 +90,7 @@
 - Bài thi chỉ mở khi xem hết video; rút ngẫu nhiên câu, xáo đáp án; đồng hồ đếm ngược và tự nộp khi hết giờ; hiện đáp án + giải thích nếu bật
 - **Lượt thi được tính ngay khi bấm "Bắt đầu"** (chặn mở đề rồi thoát); học viên được báo trước
 - Khóa không có câu hỏi cuối khóa → hoàn thành khi xem hết video
+- Khóa không có video (chỉ có câu CUOI KHOA, từ 11/11/2026) → mở thẳng bài kiểm tra; đạt `passed`, hết lượt `failed`
 - Chế độ "Xem thử" khi mở ngoài LMS, có nút xóa tiến độ
 - **Tài liệu PDF theo từng video** (không bắt buộc, thường là slide): nút "📄 Tài liệu" mở cột bên phải video, **video vẫn chạy** để xem song song; điện thoại thì nằm dưới video. Vẽ bằng PDF.js nên không có nút tải/in và chạy được trên iPhone. Ẩn khi làm bài thi. Không in tên học viên (Alex chốt). Chấp nhận rủi ro người rành máy tải được file PDF
 
@@ -103,7 +104,7 @@
 | `cmi.suspend_data` | JSON gọn: `{v:[[đã xem xa nhất, vị trí, xong]], p:[id pop-up đã đúng], a:số lượt, s:điểm cao nhất, q:0/1/2}` (giới hạn 4.096 ký tự) |
 | `cmi.core.session_time`, `cmi.core.exit` | exit = "suspend" khi chưa xong, rỗng khi đạt/hết lượt. Khóa Tham khảo luôn "suspend" để lần sau mở lại đúng bài, đúng chỗ |
 
-**Đã kiểm tra:** 62/62 tình huống tự động (luật học, tài liệu PDF, chương, khóa Tham khảo) trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud** (bản trước khi có chương và khóa Tham khảo): ổn. **Chưa thử trên SCORM Cloud/Workday:** khóa Tham khảo (báo `completed` ngay khi mở, kèm exit = "suspend") và chương.
+**Đã kiểm tra:** 75/75 tình huống tự động (luật học, tài liệu PDF, chương, khóa Tham khảo, khóa chỉ video, khóa chỉ bài thi) trên Chrome (Playwright) qua LMS giả lập. Alex đã chạy thử gói demo trên **SCORM Cloud** (bản trước khi có chương và khóa Tham khảo): ổn. **Chưa thử trên SCORM Cloud/Workday:** khóa Tham khảo (báo `completed` ngay khi mở, kèm exit = "suspend") và chương.
 
 **Phát hiện khi test:** tua lại video chỉ đúng khi máy chủ hỗ trợ tải từng phần (HTTP Range). Workday và SCORM Cloud thuộc loại này.
 
@@ -123,7 +124,7 @@ Mỗi khóa = 1 file Excel chép từ **template chuẩn, trống** `templates/M
 
 Xem `docs/BUILDER_SPEC.md`. Tóm tắt: website tĩnh 5 bước (chọn thư mục khóa → đặt pop-up và chương → kiểm tra → xem thử → xuất), xử lý hoàn toàn trên trình duyệt. Cùng code đóng gói với lệnh `builder/scripts/build-scorm.mjs`. Có trang hướng dẫn cho trainer (quyết định #22).
 
-**Test tự động** (`bash tests/run_all.sh`, GitHub chạy lại mỗi lần đổi code): 22 test logic · 62 test Player · 95 test giao diện Builder.
+**Test tự động** (`bash tests/run_all.sh`, GitHub chạy lại mỗi lần đổi code): 25 test logic · 75 test Player · 99 test giao diện Builder.
 
 **Tiến độ:** M1 ✅ (chọn file, đọc Excel + thư mục video, màn hình kiểm tra lỗi) · M2 ✅ (xuất zip SCORM streaming, thông tin Workday; khóa 1,5 GB xuất trong ~30 giây, RAM tăng ~150 MB) · M3 ✅ (đặt pop-up bằng nút bấm, xem thử bằng Player thật; sau đó đổi luồng: chọn thư mục 1 lần, tự tìm Excel, nút Kiểm tra lại, đặt pop-up trước bước kiểm tra) · M3.3 ✅ (05/11: loại khóa Tham khảo, chương theo từng video) · M4 🟡 hướng dẫn trainer: đã lên web (`huong-dan.html`, nút "📖 Hướng dẫn"), chờ trainer đọc thử và thử Edge. Deploy tự động lên GitHub Pages khi `main` thay đổi.
 

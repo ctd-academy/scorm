@@ -106,7 +106,7 @@ test("template chuẩn trống: báo thiếu mã khóa, tên khóa, video", () =
   assert.deepEqual(errors, [
     "Sheet Thông tin khóa, dòng 2: chưa điền Mã khóa",
     "Sheet Thông tin khóa, dòng 3: chưa điền Tên khóa",
-    "Sheet Video: chưa có video nào. Nhập dữ liệu từ dòng 3",
+    "Khóa chưa có nội dung: sheet Video chưa có video nào (nhập từ dòng 3). Nếu khóa chỉ có bài kiểm tra, nhập câu hỏi loại CUOI KHOA ở sheet Câu hỏi",
   ]);
 });
 
@@ -266,4 +266,56 @@ test("Chương: xếp theo thời gian, báo lỗi đúng dòng, cảnh báo tr�
   assert.ok(warnings.includes("Sheet Chương, dòng 6: chương đầu tiên của video 3 bắt đầu ở 00:30. Nên thêm một chương ở 00:00 để học viên quay về được đoạn đầu video"), warnings.join("\n"));
   assert.deepEqual(course.videos[0].chapters.map((c) => c.time), [0, 20, 42]);
   assert.deepEqual(course.videos[2].chapters, [{ time: 30, title: "Khi phát hiện mối nguy" }]);
+});
+
+// Bỏ hết dòng dữ liệu (từ dòng 3) của một sheet, giữ tiêu đề
+const clearRows = (rows) => rows.splice(2);
+
+test("khóa chỉ có video (không câu hỏi, không tài liệu): không lỗi, không bài kiểm tra", () => {
+  const { sheets, folder } = demo();
+  clearRows(sheets["Câu hỏi"]);
+  sheets["Video"].slice(2).forEach((row) => { if (row) row[4] = ""; }); // bỏ cột tài liệu
+  const { course, errors, warnings } = readCourse(sheets, folder.filter((f) => !f.name.endsWith(".pdf")), ffDurations(folder));
+  assert.deepEqual(errors, []);
+  assert.deepEqual(warnings, []);
+  assert.equal(course.videos.length, 3);
+  assert.ok(course.videos.every((v) => !v.docs));
+  assert.deepEqual([course.popups, course.quiz], [[], []]);
+});
+
+test("khóa chỉ có bài kiểm tra (sheet Video trống): không lỗi, cảnh báo để trainer biết", () => {
+  const { sheets, folder } = demo();
+  clearRows(sheets["Video"]);
+  clearRows(sheets["Chương"]);
+  const q = sheets["Câu hỏi"];
+  const popupRows = q.map((row, r) => (r >= 2 && row && row[1] === "POPUP" && !String(row[4]).startsWith("(Ví dụ)") ? r : -1)).filter((r) => r >= 0);
+  assert.equal(popupRows.length, 4);
+  // còn pop-up: báo lỗi từng dòng, không phải "Video số phải từ 1 đến 0"
+  const withPopups = readCourse(sheets, folder.filter((f) => !f.path.startsWith("videos/")));
+  assert.deepEqual(withPopups.errors, popupRows.map((r) => `Sheet Câu hỏi, dòng ${r}: khóa không có video nên không có pop-up. Đổi loại thành CUOI KHOA hoặc xóa dòng này`));
+  for (const r of popupRows) q[r] = [];
+  const { course, errors, warnings, files } = readCourse(sheets, folder.filter((f) => !f.path.startsWith("videos/")));
+  assert.deepEqual(errors, []);
+  assert.deepEqual(warnings, ["Sheet Video trống: khóa chỉ có bài kiểm tra, học viên vào thẳng bài kiểm tra"]);
+  assert.deepEqual(course.videos, []);
+  assert.equal(course.quiz.length, 6);
+  assert.ok(files.every((f) => !f.zipPath.startsWith("videos/")));
+  // thư mục còn video mà Excel không dùng: nhắc thêm (có thể quên nhập sheet Video)
+  assert.equal(readCourse(sheets, folder).warnings[1], "Thư mục có 3 video không dùng trong Excel: 'videos/01_vi-sao-an-toan.mp4', 'videos/02_bao-ho-ca-nhan.mp4', 'videos/03_nhan-dien-moi-nguy.mp4'");
+  // còn dòng chương: báo lỗi
+  sheets["Chương"][2] = [, 1, "00:00", "Mở đầu"];
+  assert.deepEqual(readCourse(sheets, folder).errors, ["Sheet Chương, dòng 2: khóa không có video nên không có chương. Xóa dòng này"]);
+});
+
+test("không video, không câu CUOI KHOA; khóa Tham khảo không video: báo lỗi", () => {
+  const { sheets, folder } = demo();
+  clearRows(sheets["Video"]);
+  clearRows(sheets["Câu hỏi"]);
+  clearRows(sheets["Chương"]);
+  assert.deepEqual(readCourse(sheets, folder).errors, ["Khóa chưa có nội dung: sheet Video chưa có video nào (nhập từ dòng 3). Nếu khóa chỉ có bài kiểm tra, nhập câu hỏi loại CUOI KHOA ở sheet Câu hỏi"]);
+  const ref = demo();
+  clearRows(ref.sheets["Video"]);
+  clearRows(ref.sheets["Chương"]);
+  ref.sheets["Thông tin khóa"][12][2] = "Tham khảo";
+  assert.deepEqual(readCourse(ref.sheets, ref.folder).errors, ["Sheet Video: chưa có video nào. Nhập dữ liệu từ dòng 3"]);
 });
